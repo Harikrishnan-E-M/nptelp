@@ -1,0 +1,365 @@
+📦 COMPLETE PROJECT STRUCTURE - VERIFIED ✅
+
+d:\nptel/
+│
+├─ 📄 README.md                      ← Start here for complete reference
+├─ 📄 QUICKSTART.md                  ← Quick 5-minute setup guide ⭐
+├─ 📄 SETUP_COMPLETE.md              ← What's been created (this message)
+├─ 📄 DEPLOYMENT.md                  ← Production deployment guide
+├─ 📄 PROJECT_STRUCTURE.md           ← Visual project explanation
+├─ 📄 setup.bat                      ← Auto-setup for Windows
+├─ 📄 setup.sh                       ← Auto-setup for Mac/Linux
+├─ 📄 .gitignore                     ← Git ignore rules
+│
+├─ 📂 backend/                       ← EXPRESS.JS SERVER
+│   ├─ 📄 server.js                  ← Main API server with all routes
+│   │                                   - GET /api/years
+│   │                                   - POST /api/years
+│   │                                   - DELETE /api/years/:yearId
+│   │                                   - GET /api/statistics/:yearId
+│   │                                   - POST /api/upload/:yearId
+│   │                                   - GET /health
+│   ├─ 📄 sanityClient.js            ← Sanity CMS client setup
+│   ├─ 📄 package.json               ← Dependencies list
+│   ├─ 📄 .env                       ← 🔐 (Add your Sanity token here)
+│   ├─ 📄 .env.example               ← Template for .env
+│   └─ 📂 uploads/                   ← CSV files uploaded here
+│
+├─ 📂 frontend/                      ← REACT FRONTEND (VITE)
+│   ├─ 📄 index.html                 ← React entry HTML
+│   ├─ 📄 package.json               ← Dependencies
+│   ├─ 📄 vite.config.js             ← Vite configuration
+│   │                                   (API proxy to localhost:5000)
+│   │
+│   └─ 📂 src/
+│       ├─ 📄 main.jsx               ← React DOM render
+│       ├─ 📄 App.jsx                ← Main app component
+│       │                               (Switches between YearsList & Statistics)
+│       ├─ 📄 App.css                ← All styling (preserved from original)
+│       │                               - .page-title
+│       │                               - .card
+│       │                               - .table (with Bootstrap)
+│       │                               - .upload-area
+│       │                               - .year-card
+│       │                               - .stat-card
+│       │
+│       └─ 📂 components/
+│           ├─ 📄 YearsList.jsx      ← Homepage
+│           │                           - Displays all academic years
+│           │                           - Add new year form
+│           │                           - Click to view statistics
+│           │                           - Delete year button
+│           │
+│           └─ 📄 Statistics.jsx     ← Statistics page
+│                                      - CSV upload interface
+│                                      - Statistics cards (total, passed, etc)
+│                                      - Filter by batch & semester
+│                                      - Search functionality
+│                                      - Data table display
+│
+├─ 📂 sanity/                        ← SANITY CMS STUDIO
+│   ├─ 📄 sanity.config.js           ← Main Sanity configuration
+│   │                                   - Project ID: 1asbko6r
+│   │                                   - Dataset: production
+│   │                                   - Plugins: structureTool, visionTool
+│   ├─ 📄 sanity.cli.json            ← Sanity CLI configuration
+│   ├─ 📄 package.json               ← Dependencies
+│   ├─ 📄 .gitignore                 ← Sanity-specific ignores
+│   │
+│   ├─ 📂 .sanity/
+│   │   └─ 📄 projectDetails.json    ← Project metadata
+│   │
+│   └─ 📂 schemaTypes/
+│       ├─ 📄 index.js               ← Schema exports
+│       │
+│       ├─ 📄 academicYear.js        ← Academic Year document type
+│       │                               - yearLabel (string)
+│       │                               - startYear (number)
+│       │                               - endYear (number)
+│       │                               - description (string)
+│       │                               - dataCount (number, auto)
+│       │
+│       └─ 📄 nptelData.js           ← NPTEL Data document type
+│                                      - year (reference → academicYear)
+│                                      - batch (string)
+│                                      - regNo (string)
+│                                      - name (string)
+│                                      - semester (string)
+│                                      - courseCode (string)
+│                                      - courseTitle (string)
+│                                      - credit (string)
+│                                      - score (string)
+│                                      - examMonth (string)
+│                                      - examYear (string)
+│                                      - certId (string)
+│                                      - status (enum: Accepted/Rejected/Pending)
+│
+└─ 📄 [Old files - deprecated]
+   ├─ index.html                      ← Old HTML (not used)
+   └─ statistics.html                 ← Old HTML (not used)
+
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 QUICK START COMMANDS
+
+Windows (Auto-setup recommended):
+  cd d:\nptel
+  setup.bat
+
+Manual Setup (All platforms):
+  cd backend && npm install
+  cd ../frontend && npm install  
+  cd ../sanity && npm install
+
+Deploy Sanity Schema:
+  cd sanity && npx sanity deploy
+
+Start Services (3 terminals):
+  Terminal 1: cd backend && npm run dev       (Port 5000)
+  Terminal 2: cd frontend && npm run dev      (Port 3000)
+  Terminal 3: cd sanity && npm run dev        (Port 3333)
+
+Open in Browser:
+  Frontend: http://localhost:3000
+  Sanity Studio: http://localhost:3333
+
+
+═══════════════════════════════════════════════════════════════════
+
+📊 WHAT EACH SERVICE DOES
+
+BACKEND (Express.js on Port 5000)
+├─ Handles all API requests
+├─ Manages CSV file uploads
+├─ Parses CSV data
+├─ Stores data in Sanity CMS
+├─ Calculates statistics
+└─ Returns JSON responses
+
+FRONTEND (React + Vite on Port 3000)
+├─ Shows academic years as cards
+├─ Allows creating new years
+├─ Shows statistics dashboard
+├─ Handles CSV file upload UI
+├─ Filters and searches data
+├─ Calls backend API
+└─ Uses Bootstrap for styling
+
+SANITY STUDIO (Port 3333)
+├─ Web interface to Sanity CMS
+├─ Manage academic years directly
+├─ Manage NPTEL data records
+├─ View all documents
+├─ Edit schema
+└─ Query data with GROQ
+
+
+═══════════════════════════════════════════════════════════════════
+
+🔐 IMPORTANT: GETTING YOUR SANITY TOKEN
+
+1. Visit: https://manage.sanity.io
+2. Login with your Sanity account
+3. Select your project (1asbko6r)
+4. Go to: API → Tokens
+5. Click: "Add API Token"
+6. Name: "NPTEL Backend"
+7. Permissions: 
+   ✓ sanity.manage
+   ✓ sanity.content.read
+   ✓ sanity.content.write
+8. Click: "Create"
+9. Copy the token
+10. Open: backend/.env
+11. Replace: SANITY_TOKEN=your_token_here
+12. Replace "your_token_here" with copied token
+
+
+═══════════════════════════════════════════════════════════════════
+
+📝 CSV FILE REQUIREMENTS
+
+Required Columns:
+  • Batch
+  • Reg No (or RegNo)
+  • Name
+  • Sem
+  • Course Code
+  • Course Title
+  • Credit
+  • Score
+  • Exam Month
+  • Exam Year
+  • Cert ID
+  • Status
+
+Example Usage:
+  Use: C:\Users\harik\Downloads\NPTEL_yearwise.csv
+  Or create your own with same column structure
+
+
+═══════════════════════════════════════════════════════════════════
+
+✅ SETUP CHECKLIST
+
+Before you start:
+  ☐ Node.js v18+ installed
+  ☐ npm installed (comes with Node.js)
+  ☐ Sanity account created
+  ☐ Access to manage.sanity.io
+
+Setup steps:
+  ☐ Read QUICKSTART.md
+  ☐ Get Sanity token from manage.sanity.io
+  ☐ Add token to backend/.env
+  ☐ Run setup.bat (Windows) or manual npm install
+  ☐ Deploy schema: cd sanity && npx sanity deploy
+  ☐ Start all 3 services in separate terminals
+  ☐ Open http://localhost:3000 in browser
+
+First use:
+  ☐ Create an academic year (e.g., "2023-24")
+  ☐ Click "View Statistics" on that year
+  ☐ Upload your CSV file
+  ☐ See the data in the table
+  ☐ Test filters and search
+
+
+═══════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION ROADMAP
+
+Start here → QUICKSTART.md (5 minute setup)
+              ↓
+Then read → README.md (complete reference)
+             ↓
+For deployment → DEPLOYMENT.md (production setup)
+                 ↓
+For understanding → PROJECT_STRUCTURE.md (visual guide)
+
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 FEATURE SUMMARY
+
+✨ Academic Years
+  • List all years as cards
+  • Create new year with form
+  • Delete year (removes all data)
+  • Shows record count per year
+
+✨ Statistics Dashboard
+  • Total students count
+  • Passed count
+  • Failed count
+  • Average score
+  • Filter by batch
+  • Filter by semester
+  • Search by name/reg no/course
+  • Reset filters button
+  • Back to years button
+
+✨ CSV Upload
+  • Drag & drop interface
+  • File selection dialog
+  • Upload button
+  • Progress indication
+  • Success/error messages
+  • Data validation
+
+✨ Data Table
+  • Shows all records
+  • Sortable columns
+  • Responsive design
+  • Status badges
+  • Bootstrap styling
+
+
+═══════════════════════════════════════════════════════════════════
+
+🌐 API ENDPOINTS REFERENCE
+
+GET /api/years
+  Returns: Array of all academic years
+  Example: [{ _id: "...", yearLabel: "2023-24", dataCount: 150 }]
+
+POST /api/years
+  Body: { yearLabel, startYear, endYear, description }
+  Returns: Created year document
+
+DELETE /api/years/:yearId
+  Returns: { success: true }
+  Note: Deletes all data for that year
+
+GET /api/statistics/:yearId
+  Returns: {
+    totalStudents: number,
+    passCount: number,
+    failCount: number,
+    pendingCount: number,
+    averageScore: string,
+    batches: string[],
+    semesters: string[],
+    data: nptelData[]
+  }
+
+POST /api/upload/:yearId
+  Body: FormData with file
+  Returns: { success: true, recordCount: number }
+
+GET /health
+  Returns: { status: "ok" }
+
+
+═══════════════════════════════════════════════════════════════════
+
+🛠️ TECHNOLOGY VERSIONS
+
+Frontend:
+  • React 18.2.0
+  • Vite 5.0.8
+  • Bootstrap 5.3.3
+  • Axios 1.6.2
+
+Backend:
+  • Express.js 4.18.2
+  • Node.js 18+
+  • Sanity Client 6.12.0
+  • csv-parser 3.0.0
+  • Multer 1.4.5
+
+Sanity:
+  • Sanity 3.20.0
+  • Vision Tool 3.20.0
+
+
+═══════════════════════════════════════════════════════════════════
+
+🆘 QUICK TROUBLESHOOTING
+
+Issue: Port 5000 already in use
+Solution: Change PORT in backend/.env
+
+Issue: Frontend can't connect to backend
+Solution: Ensure backend is running on 5000
+
+Issue: Sanity token invalid
+Solution: Get new token from manage.sanity.io and update .env
+
+Issue: CSV upload fails
+Solution: Check CSV column names match requirements
+
+Issue: "Cannot find module"
+Solution: Run npm install in that directory
+
+
+═══════════════════════════════════════════════════════════════════
+
+✨ YOU'RE ALL SET!
+
+Your complete NPTEL Statistics Management System is ready.
+
+Next step: Open QUICKSTART.md and follow the 5 easy steps!
+
+Good luck! 🚀

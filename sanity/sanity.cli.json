@@ -1,0 +1,9 @@
+{
+  "project": {
+    "name": "nptel-project"
+  },
+  "api": {
+    "projectId": "1asbko6r",
+    "dataset": "production"
+  }
+}

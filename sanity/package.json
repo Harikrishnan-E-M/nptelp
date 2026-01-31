@@ -13,7 +13,9 @@
     "deploy": "sanity deploy",
     "deploy-graphql": "sanity graphql deploy",
     "undeploy": "sanity undeploy",
-    "graphql:generate": "sanity graphql generate"
+    "graphql:generate": "sanity graphql generate",
+    "repair-weak-refs": "node scripts/repairWeakReferences.js",
+    "purge-all-docs": "node scripts/purgeAllDocuments.js"
   },
   "keywords": [
     "sanity",
@@ -22,6 +24,7 @@
     "blog"
   ],
   "dependencies": {
+    "@sanity/client": "^6.12.0",
     "@sanity/vision": "^3.20.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

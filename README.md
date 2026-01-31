@@ -1,326 +1,168 @@
 # NPTEL Statistics Management System
 
-A full-stack application to manage NPTEL statistics with Sanity CMS integration, built with Node.js/Express (backend) and React (frontend).
+A modern web application to manage and visualize NPTEL statistics with Sanity CMS integration.
+
+**Frontend**: React 18 + Vite + Bootstrap 5  
+**Backend**: Sanity CMS (Headless)  
+**Deployment**: Vercel (Frontend) + Sanity Cloud
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+# Frontend
+cd frontend && npm install
+
+# Sanity Studio  
+cd sanity && npm install
+```
+
+### 2. Run Development
+
+```bash
+# Terminal 1: Frontend
+cd frontend && npm run dev
+
+# Terminal 2: Sanity Studio (optional)
+cd sanity && npm run dev
+```
+
+- Frontend: http://localhost:5173
+- Sanity Studio: http://localhost:3333
+
+### 3. Deploy to Vercel
+
+1. Push to GitHub
+2. Import in Vercel
+3. Build command: `npm run build`
+4. Root directory: `frontend`
+5. Deploy!
+
+## Features
+
+- 📊 Interactive statistics dashboard
+- 📅 Multi-year academic data management
+- 📈 Batch-wise analytics and filtering
+- 🎓 Student performance tracking
+- 🔍 Advanced data filtering
+- Direct Sanity integration (no backend API needed)
 
 ## Project Structure
 
 ```
 nptel/
-├── backend/                 # Express.js backend
-│   ├── package.json
-│   ├── server.js           # Express server
-│   ├── sanityClient.js     # Sanity client setup
-│   ├── .env                # Environment variables
-│   └── uploads/            # CSV uploads directory
-├── frontend/               # React frontend
-│   ├── package.json
-│   ├── vite.config.js      # Vite configuration
-│   ├── index.html
-│   └── src/
-│       ├── main.jsx
-│       ├── App.jsx
-│       ├── App.css
-│       └── components/
-│           ├── YearsList.jsx
-│           └── Statistics.jsx
-├── sanity/                 # Sanity Studio configuration
-│   ├── package.json
+├── frontend/               # React app (Vite)
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── lib/           # Sanity client
+│   │   ├── App.jsx        # Main app
+│   │   └── main.jsx
+│   ├── vite.config.js
+│   └── package.json
+├── sanity/                # Sanity Studio
+│   ├── schemaTypes/       # Document schemas
 │   ├── sanity.config.js
-│   ├── schemaTypes/
-│   │   ├── index.js
-│   │   ├── academicYear.js
-│   │   └── nptelData.js
-│   └── .gitignore
-├── index.html              # Old HTML (deprecated)
-├── statistics.html         # Old HTML (deprecated)
-└── README.md
+│   └── package.json
+└── backend/               # [DEPRECATED - Can be removed]
 ```
 
-## Features
+## Architecture
 
-- **Academic Year Management**: Create, view, and delete academic years
-- **CSV Upload**: Upload NPTEL CSV data for each academic year
-- **Statistics Dashboard**: View statistics for each academic year
-- **Filtering & Search**: Filter by batch, semester, and search by name/registration/course
-- **Sanity CMS Integration**: All data is stored in Sanity CMS
-- **Responsive Design**: Mobile-friendly interface using Bootstrap
+Frontend fetches data **directly from Sanity** (no backend API needed):
 
-## Prerequisites
-
-- Node.js >= 18
-- npm or yarn
-- Sanity account with project ID: `1asbko6r`
-- Sanity authentication token
-
-## Installation
-
-### 1. Backend Setup
-
-```bash
-cd backend
-npm install
+```
+Frontend (React) → Sanity Client → Sanity API
 ```
 
-Create/Update `.env` file:
-```env
-SANITY_PROJECT_ID=1asbko6r
-SANITY_DATASET=production
-SANITY_API_VERSION=2024-01-30
-SANITY_TOKEN=your_sanity_token_here
-PORT=5000
-```
+Benefits:
+- No backend server maintenance
+- Real-time data from Sanity
+- Simplified deployment
+- Better performance (direct client queries)
 
-To get your Sanity token:
-1. Go to https://manage.sanity.io
-2. Navigate to your project
-3. Go to API → Tokens
-4. Create a new token with read and write permissions
-5. Copy the token and paste it in `.env`
+## Sanity Schema
 
-### 2. Frontend Setup
+### academicYear
+- `yearLabel`: Year label (e.g., "2023-2024")
+- `startYear`, `endYear`: Academic years
+- `description`: Additional info
+- `dataCount`: Number of records
 
-```bash
-cd frontend
-npm install
-```
+### nptelData
+- `year`: Reference to academicYear
+- `batch`, `regNo`, `name`, `semester`
+- `courseCode`, `courseTitle`, `credit`
+- `score`, `examMonth`, `examYear`
+- `certId`, `proofUrl`, `status`
 
-The frontend is configured to proxy API requests to `http://localhost:5000` (see `vite.config.js`).
+## Environment Setup
 
-### 3. Sanity Studio Setup
+The application is pre-configured with:
+- Project ID: `1asbko6r`
+- Dataset: `production`
+- Credentials: In `frontend/src/lib/sanityClient.js`
 
-```bash
-cd sanity
-npm install
-npx sanity deploy
-```
+No additional environment setup required for development!
 
-This will deploy your schema to Sanity.
+## Deployment Checklist
 
-## Running the Application
-
-### Start Backend Server
-
-```bash
-cd backend
-npm run dev
-# Server will run at http://localhost:5000
-```
-
-### Start Frontend Development Server
-
-In a new terminal:
-```bash
-cd frontend
-npm run dev
-# Frontend will run at http://localhost:3000
-```
-
-### Start Sanity Studio
-
-In another terminal:
-```bash
-cd sanity
-npm run dev
-# Sanity Studio will run at http://localhost:3333
-```
-
-Open your browser and navigate to:
-- **Frontend**: http://localhost:3000
-- **Sanity Studio**: http://localhost:3333
-
-## API Endpoints
-
-### Get All Academic Years
-```
-GET /api/years
-```
-Returns array of all academic years.
-
-### Get Statistics for a Year
-```
-GET /api/statistics/:yearId
-```
-Returns statistics and data for a specific academic year.
-
-### Upload CSV File
-```
-POST /api/upload/:yearId
-Content-Type: multipart/form-data
-
-Body: file (CSV file)
-```
-Uploads CSV data for an academic year.
-
-### Create Academic Year
-```
-POST /api/years
-Content-Type: application/json
-
-{
-  "yearLabel": "2023-24",
-  "startYear": 2023,
-  "endYear": 2024,
-  "description": "Academic year 2023-2024"
-}
-```
-
-### Delete Academic Year
-```
-DELETE /api/years/:yearId
-```
-Deletes the academic year and all associated data.
-
-## CSV File Format
-
-Expected CSV columns:
-- `Batch` - Student batch
-- `Reg No` or `RegNo` - Registration number
-- `Name` - Student name
-- `Sem` - Semester
-- `Course Code` - NPTEL course code
-- `Course Title` - Course name
-- `Credit` - Course credits
-- `Score` - Student score
-- `Exam Month` - Month of exam
-- `Exam Year` - Year of exam
-- `Cert ID` - Certificate ID
-- `Status` - Accepted/Rejected/Pending
-
-Example CSV structure:
-```
-Batch,Reg No,Name,Sem,Course Code,Course Title,Credit,Score,Exam Month,Exam Year,Cert ID,Status
-2020,20CSR002,John Doe,even,CSR-001,Advanced Programming,3,75,October,2021,CERT123,Accepted
-```
-
-## Using the Application
-
-### 1. Add Academic Year
-- Click "Add Academic Year" button
-- Fill in Year Label (e.g., 2023-24), Start Year, End Year, and Description
-- Click "Save"
-
-### 2. Upload CSV Data
-- Select an academic year
-- Click "View Statistics"
-- Use the upload area to select a CSV file
-- Click "Upload CSV"
-- Data will be processed and stored in Sanity
-
-### 3. View Statistics
-- Click "View Statistics" for any academic year
-- See overview statistics (total students, passed, failed, average score)
-- Use filters and search to explore the data
-
-### 4. Manage Data in Sanity Studio
-- Access Sanity Studio at http://localhost:3333
-- Create, edit, or delete academic years and NPTEL data directly
-- View all documents and their relationships
-
-## Building for Production
-
-### Frontend Build
-```bash
-cd frontend
-npm run build
-# Creates dist/ folder with optimized build
-```
-
-### Sanity Deployment
-Your schema is already deployed to Sanity. To update:
-```bash
-cd sanity
-npm run deploy
-```
-
-### Backend Deployment
-The backend can be deployed to services like:
-- Heroku
-- Railway
-- Render
-- Vercel (serverless)
-- AWS Lambda
-- Azure Functions
-
-Update environment variables in your deployment platform with the Sanity credentials.
+- [x] Frontend dependencies installed
+- [x] Sanity client configured
+- [ ] Push to GitHub
+- [ ] Connect Vercel to GitHub repository
+- [ ] Deploy frontend to Vercel
+- [ ] Verify Sanity data is accessible
 
 ## Troubleshooting
 
-### API Connection Issues
-- Ensure backend is running on port 5000
-- Check CORS is enabled in Express (`cors()` middleware)
-- Verify Sanity token is valid and has read/write permissions
+**Port already in use?**
+```bash
+# Frontend: Change port in vite.config.js
+# or use:
+npm run dev -- --port 5174
 
-### CSV Upload Issues
-- Verify CSV headers match expected column names
-- Ensure CSV file is not corrupted
-- Check backend console for detailed error messages
-
-### Sanity Authentication Issues
-- Verify SANITY_PROJECT_ID is correct: `1asbko6r`
-- Check SANITY_TOKEN is valid and not expired
-- Regenerate token if needed from Sanity dashboard
-
-### Port Already in Use
-- Backend: Change `PORT` in `.env`
-- Frontend: Set `port: 3001` in `vite.config.js`
-- Sanity: Use `sanity dev --port 3334`
-
-## Data Schema
-
-### Academic Year Document
-```javascript
-{
-  _id: "...",
-  _type: "academicYear",
-  yearLabel: "2023-24",
-  startYear: 2023,
-  endYear: 2024,
-  description: "Academic year 2023-2024",
-  dataCount: 150
-}
+# Sanity: Use different port
+npm run dev -- --port 3334
 ```
 
-### NPTEL Data Document
-```javascript
-{
-  _id: "...",
-  _type: "nptelData",
-  year: { _type: "reference", _ref: "year-id" },
-  batch: "2020",
-  regNo: "20CSR002",
-  name: "John Doe",
-  semester: "even",
-  courseCode: "CSR-001",
-  courseTitle: "Advanced Programming",
-  credit: "3",
-  score: "75",
-  examMonth: "October",
-  examYear: "2021",
-  certId: "CERT123",
-  status: "Accepted"
-}
+**Build errors?**
+```bash
+# Clear cache and reinstall
+rm -r node_modules
+npm install
+npm run build -- --force
 ```
+
+**Sanity connection issues?**
+- Verify project ID: `1asbko6r`
+- Check dataset: `production`
+- Ensure API access is enabled in Sanity dashboard
 
 ## Next Steps
 
-1. Get your Sanity token and add to `.env`
-2. Install dependencies in backend, frontend, and sanity folders
-3. Deploy schema to Sanity: `cd sanity && npx sanity deploy`
-4. Start all services and access the application
-5. Upload your CSV file to get started
+1. **Install dependencies**: `npm install` in frontend/ and sanity/
+2. **Run frontend**: `npm run dev` in frontend/
+3. **Manage data**: Open Sanity Studio (http://localhost:3333)
+4. **Deploy**: Push to GitHub and connect Vercel
 
-## Support
+## Cleanup
 
-For issues or questions:
-- Check backend console for API errors
-- Verify Sanity project and token
-- Review CSV file format
-- Check environment variables are set correctly
+The following files can be safely deleted (old documentation):
+- `QUICKSTART.md`
+- `DEPLOYMENT.md`
+- `FILE_STRUCTURE.txt`
+- `PROJECT_STRUCTURE.md`
+- `START_HERE.txt`
+- `setup.bat`
+- `setup.sh`
+- `index.html` (old)
+- `statistics.html` (old)
+- `backend/` (optional - no longer used)
 
 ---
 
-**Project ID**: 1asbko6r
-**Frontend**: React + Vite + Bootstrap
-**Backend**: Express.js + Node.js
-**CMS**: Sanity
-**Database**: Sanity dataset (production)
+**Status**: ✅ Ready for Production  
+**Last Updated**: January 2026  
+**Project ID**: 1asbko6r  
+**Sanity Dashboard**: https://manage.sanity.io

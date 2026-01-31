@@ -86,6 +86,7 @@ function Statistics({ year, onBack }) {
 
   const closeModal = () => {
     setModalOpen(false);
+    setFilterType('all'); // Reset to 'all' when closing modal
   };
 
   const handleCardClick = (type) => {
@@ -123,19 +124,38 @@ function Statistics({ year, onBack }) {
     return Object.values(grouped);
   };
 
-  const renderBatchBar = (label, value, colorClass, onClick) => (
-    <div className="batch-bar-row" onClick={onClick}>
-      <div className="batch-bar-label">{label}</div>
-      <div className="batch-bar-track">
-        <div
-          className={`batch-bar-fill ${colorClass}`}
-          style={{ width: `${(value / maxBatchTotal) * 100}%` }}
-        >
-          <span className="batch-bar-value">{value}</span>
+  const renderBatchBar = (label, value, colorClass, onClick) => {
+    const widthPercent = (value / maxBatchTotal) * 100;
+    
+    // Smart width calculation: 
+    // 0 stays 0%, small values get minimum visibility (3%), others show proportionally
+    let displayWidth = widthPercent;
+    if (value > 0 && widthPercent < 3) {
+      displayWidth = 3; // Minimum 3% for non-zero values
+    } else if (value === 0) {
+      displayWidth = 0; // Zero stays zero
+    }
+    
+    return (
+      <div 
+        className="batch-bar-row" 
+        onClick={onClick}
+        onMouseMove={handleCardMouseMove}
+        onMouseLeave={handleCardMouseLeave}
+      >
+        <div className="batch-bar-label">{label}</div>
+        <div className="batch-bar-wrapper">
+          <div className="batch-bar-value-badge">{value}</div>
+          <div className="batch-bar-track">
+            <div
+              className={`batch-bar-fill ${colorClass}`}
+              style={{ width: `${displayWidth}%` }}
+            ></div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const handleBatchBarClick = (batch, type) => {
     if (!stats || !stats.data) return;
@@ -154,6 +174,22 @@ function Statistics({ year, onBack }) {
     if (status === 'Rejected') return 'status-rejected';
     if (status === 'Pending') return 'status-pending';
     return 'status-na';
+  };
+
+  const handleCardMouseMove = (e) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    card.style.setProperty('--mouse-x', `${x}px`);
+    card.style.setProperty('--mouse-y', `${y}px`);
+  };
+
+  const handleCardMouseLeave = (e) => {
+    const card = e.currentTarget;
+    card.style.setProperty('--mouse-x', '50%');
+    card.style.setProperty('--mouse-y', '50%');
   };
 
   if (loading) {
@@ -179,6 +215,8 @@ function Statistics({ year, onBack }) {
             <div 
               className={`stat-card ${filterType === 'all' ? 'active' : ''}`}
               onClick={() => handleCardClick('all')}
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
               style={{ cursor: 'pointer' }}
             >
               <div className="stat-title">Total Students</div>
@@ -190,6 +228,8 @@ function Statistics({ year, onBack }) {
             <div 
               className={`stat-card ${filterType === 'elite-gold' ? 'active' : ''}`}
               onClick={() => handleCardClick('elite-gold')}
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
               style={{ cursor: 'pointer' }}
             >
               <div className="stat-title">Elite + Gold</div>
@@ -201,6 +241,8 @@ function Statistics({ year, onBack }) {
             <div 
               className={`stat-card ${filterType === 'elite-silver' ? 'active' : ''}`}
               onClick={() => handleCardClick('elite-silver')}
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
               style={{ cursor: 'pointer' }}
             >
               <div className="stat-title">Elite + Silver</div>
@@ -212,6 +254,8 @@ function Statistics({ year, onBack }) {
             <div 
               className={`stat-card ${filterType === 'elite' ? 'active' : ''}`}
               onClick={() => handleCardClick('elite')}
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
               style={{ cursor: 'pointer' }}
             >
               <div className="stat-title">Elite</div>
@@ -222,85 +266,7 @@ function Statistics({ year, onBack }) {
         </div>
       )}
 <br></br>
-      {/* Academic Year Statistics Chart */}
-      {calculatedStats && (
-        <div className="card shadow-sm mb-4">
-          <div className="card-body">
-            <h5 className="mb-4">Academic Year Statistics</h5>
-            <div className="chart-container">
-              <div 
-                className={`chart-bar ${filterType === 'all' ? 'active' : ''}`}
-                onClick={() => handleCardClick('all')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="chart-label">Total Students : {calculatedStats.total}</div>
-                <div className="chart-bar-container">
-                  <div 
-                    className="chart-bar-fill bg-primary" 
-                    style={{ width: '100%' }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div 
-                className={`chart-bar ${filterType === 'elite-gold' ? 'active' : ''}`}
-                onClick={() => handleCardClick('elite-gold')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="chart-label">Elite + Gold : {calculatedStats.eliteGold}</div>
-                <div className="chart-bar-container">
-                  <div 
-                    className="chart-bar-fill bg-warning" 
-                    style={{ width: `${(calculatedStats.eliteGold / calculatedStats.total * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div 
-                className={`chart-bar ${filterType === 'elite-silver' ? 'active' : ''}`}
-                onClick={() => handleCardClick('elite-silver')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="chart-label">Elite + Silver : {calculatedStats.eliteSilver}</div>
-                <div className="chart-bar-container">
-                  <div 
-                    className="chart-bar-fill bg-secondary" 
-                    style={{ width: `${(calculatedStats.eliteSilver / calculatedStats.total * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div 
-                className={`chart-bar ${filterType === 'elite' ? 'active' : ''}`}
-                onClick={() => handleCardClick('elite')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="chart-label">Elite : {calculatedStats.elite}</div>
-                <div className="chart-bar-container">
-                  <div 
-                    className="chart-bar-fill bg-success" 
-                    style={{ width: `${(calculatedStats.elite / calculatedStats.total * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div 
-                className={`chart-bar ${filterType === 'successfully-completed' ? 'active' : ''}`}
-                onClick={() => handleCardClick('successfully-completed')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="chart-label">Successfully Completed : {calculatedStats.successfullyCompleted}</div>
-                <div className="chart-bar-container">
-                  <div 
-                    className="chart-bar-fill bg-info" 
-                    style={{ width: `${(calculatedStats.successfullyCompleted / calculatedStats.total * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
 <br></br>
       {/* Batch-wise Statistics Chart */}
       {calculatedStats && batchStats.length > 0 && (
@@ -311,13 +277,7 @@ function Statistics({ year, onBack }) {
               Total Students Benefitted: <strong>{calculatedStats.total}</strong> across <strong>{batchStats.length}</strong> batches
             </div>
 
-            <div className="batch-legend">
-              <span><span className="legend-dot bg-primary"></span> Total Students Benefitted</span>
-              <span><span className="legend-dot bg-warning"></span> Elite + Gold</span>
-              <span><span className="legend-dot bg-secondary"></span> Elite + Silver</span>
-              <span><span className="legend-dot bg-success"></span> Elite</span>
-              <span><span className="legend-dot bg-info"></span> Successfully Completed</span>
-            </div>
+
 
             <div className="batch-chart">
               {batchStats.map((batch) => (
@@ -337,87 +297,7 @@ function Statistics({ year, onBack }) {
         </div>
       )}
 <br></br>
-      {/* Table */}
-      <div className="card shadow-sm">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="mb-0">
-              Student Details 
-              {filterType !== 'all' && (
-                <span className="badge bg-primary ms-2">
-                  {filterType === 'elite-gold' && 'Elite + Gold'}
-                  {filterType === 'elite-silver' && 'Elite + Silver'}
-                  {filterType === 'elite' && 'Elite'}
-                  {filterType === 'successfully-completed' && 'Successfully Completed'}
-                </span>
-              )}
-            </h5>
-            {filterType !== 'all' && (
-              <button 
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => handleCardClick('all')}
-              >
-                Show All
-              </button>
-            )}
-          </div>
-          <div className="table-container">
-            <table className="table table-bordered table-striped align-middle">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Batch</th>
-                  <th>Reg No</th>
-                  <th>Name</th>
-                  <th>Sem</th>
-                  <th>Course Code</th>
-                  <th>Course Title</th>
-                  <th>Credit</th>
-                  <th>Score</th>
-                  <th>Exam</th>
-                  <th>Cert ID</th>
-                  <th>Proof</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map((item, index) => (
-                  <tr key={item._id}>
-                    <td>{index + 1}</td>
-                    <td>{item.batch}</td>
-                    <td>{item.regNo}</td>
-                    <td>{item.name}</td>
-                    <td>{item.semester}</td>
-                    <td>{item.courseCode}</td>
-                    <td>{item.courseTitle}</td>
-                    <td>{item.credit}</td>
-                    <td>{item.score}</td>
-                    <td>{item.examMonth} {item.examYear}</td>
-                    <td>{item.certId}</td>
-                    <td>
-                      {item.proofUrl ? (
-                        <a href={item.proofUrl} target="_blank" rel="noreferrer">View</a>
-                      ) : (
-                        'NA'
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge-status ${getStatusClass(item.status)}`}>
-                        {item.status || 'N/A'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredData.length === 0 && (
-              <div className="p-4 text-center text-muted">
-                No records found for this filter.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      
 
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
@@ -432,7 +312,6 @@ function Statistics({ year, onBack }) {
             <div className="modal-body">
               <div className="modal-toolbar">
                 <span className="modal-chip">Showing {modalData.length} records</span>
-                <span className="modal-hint">Click outside to close</span>
               </div>
               <div className="table-container modal-table">
                 <table className="table table-bordered table-striped align-middle">

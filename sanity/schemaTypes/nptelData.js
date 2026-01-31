@@ -11,6 +11,7 @@ export const nptelData = defineType({
       to: [{ type: 'academicYear' }],
       title: 'Academic Year',
       validation: (Rule) => Rule.required(),
+      weak: true,
     }),
     defineField({
       name: 'batch',

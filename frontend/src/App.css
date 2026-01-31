@@ -107,8 +107,7 @@ body {
 
 .year-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);  border-color: #1a56db;}
 
 .stat-card {
   background: white;
@@ -118,11 +117,40 @@ body {
   box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
   border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    rgba(26, 86, 219, 0.12) 0%,
+    rgba(26, 86, 219, 0.04) 30%,
+    transparent 70%
+  );
+  pointer-events: none;
+  transition: background 0.1s ease;
+  z-index: 1;
+}
+
+.stat-card > * {
+  position: relative;
+  z-index: 2;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  border-color: #1a56db;
+  border-width: 2px;
 }
 
 .stat-card.active {
@@ -151,37 +179,81 @@ body {
 
 /* Chart Styles */
 .chart-container {
-  padding: 1rem 0;
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .chart-bar {
-  margin-bottom: 1.25rem;
-  transition: all 0.2s ease;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid transparent;
+  transition: all 0.25s ease;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: visible;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  background: linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%);
+}
+
+.chart-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    rgba(26, 86, 219, 0.15) 0%,
+    rgba(26, 86, 219, 0.05) 35%,
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.1s ease;
+  opacity: 0;
+  border-radius: 10px;
+}
+
+.chart-bar > * {
+  position: relative;
+  z-index: 2;
+}
+
+.chart-bar:hover::before {
+  opacity: 1;
 }
 
 .chart-bar:hover {
-  background: #f8fafc;
-  border-color: #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+  border-color: #1a56db;
+  box-shadow: 0 8px 20px rgba(26, 86, 219, 0.15), inset 0 0 15px rgba(26, 86, 219, 0.08);
+  transform: translateY(-2px);
+  border-width: 2px;
+}
+
+.chart-container:has(.chart-bar:hover) .chart-bar:not(:hover) {
+  opacity: 0.5;
 }
 
 .chart-bar.active {
-  background: #eef6ff;
-  border-color: #c7ddff;
+  background: linear-gradient(135deg, #eff6ff 0%, #e8f1ff 100%);
+  border-color: #1a56db;
+  box-shadow: 0 2px 8px rgba(26, 86, 219, 0.1);
 }
 
 .chart-label {
   font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.35rem;
   color: #1f2937;
 }
 
 .chart-bar-container {
   background: #e9eff7;
-  height: 18px;
+  height: 16px;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -189,7 +261,7 @@ body {
 .chart-bar-fill {
   height: 100%;
   border-radius: 12px;
-  transition: width 0.6s ease;
+  transition: all 0.4s ease;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -197,11 +269,17 @@ body {
   color: white;
   font-weight: 700;
   font-size: 0.75rem;
-  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.3);
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .chart-bar-fill span {
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
+}
+
+.chart-bar:hover .chart-bar-fill {
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,0.5), 0 6px 16px rgba(0, 0, 0, 0.25);
+  filter: brightness(1.15);
 }
 
 .stat-number {
@@ -271,7 +349,7 @@ body {
 .batch-chart {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.2rem;
 }
 
 .batch-row {
@@ -279,17 +357,35 @@ body {
   grid-template-columns: 140px 1fr;
   align-items: start;
   gap: 1.5rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.batch-row:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 20px rgba(26, 86, 219, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
 }
 
 .batch-label {
-  font-weight: 600;
-  color: #4b5563;
+  font-weight: 700;
+  color: #1a56db;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  background: #eff6ff;
+  border-radius: 8px;
+  border-left: 4px solid #1a56db;
+  text-align: center;
 }
 
 .batch-bars {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .batch-bar-row {
@@ -298,28 +394,79 @@ body {
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: visible;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  background: linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%);
 }
 
-.batch-bar-row:hover .batch-bar-track {
-  background: #e5edf8;
+.batch-bar-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    rgba(26, 86, 219, 0.15) 0%,
+    rgba(26, 86, 219, 0.05) 35%,
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.1s ease;
+  opacity: 0;
+  border-radius: 10px;
+}
+
+.batch-bar-row > * {
+  position: relative;
+  z-index: 2;
+}
+
+.batch-bar-row:hover::before {
+  opacity: 1;
+}
+
+.batch-bar-row:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+  box-shadow: 0 6px 16px rgba(26, 86, 219, 0.12), inset 0 0 12px rgba(26, 86, 219, 0.06);
+  transform: translateY(-1px);
+  border-color: #1a56db;
+}
+}
+
+.batch-bars:has(.batch-bar-row:hover) .batch-bar-row:not(:hover) {
+  opacity: 0.5;
 }
 
 .batch-bar-label {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: #4b5563;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .batch-bar-track {
-  background: #edf2f7;
-  height: 18px;
-  border-radius: 10px;
+  background: #e9eff7;
+  height: 16px;
+  border-radius: 12px;
   overflow: hidden;
+  transition: all 0.2s ease;
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .batch-bar-fill {
   height: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -327,12 +474,30 @@ body {
   color: white;
   font-weight: 700;
   font-size: 0.75rem;
-  transition: width 0.6s ease;
-  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.3);
+  transition: all 0.4s ease;
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,0.4), 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.batch-bar-value {
-  mix-blend-mode: screen;
+.batch-bar-row:hover .batch-bar-fill {
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,0.5), 0 6px 16px rgba(0, 0, 0, 0.25);
+  filter: brightness(1.15);
+}
+
+.batch-bar-value-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1a56db;
+  background: #eff6ff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  min-width: 32px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* Modal styles */
@@ -361,7 +526,7 @@ body {
 }
 
 .modal-header {
-  padding: 1.1rem 1.5rem;
+  padding: 1.5rem 1.5rem;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -378,13 +543,17 @@ body {
 .modal-title-block {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.25rem;
+  text-align: center;
+  flex: 1;
+  margin-right: 1rem;
 }
 
 .modal-subtitle {
   font-size: 0.85rem;
   color: #64748b;
   font-weight: 500;
+  margin-top: 0.25rem;
 }
 
 .modal-header .btn-close {
@@ -411,10 +580,12 @@ body {
 }
 
 .modal-body {
-  padding: 1rem 1.5rem 1.5rem;
+  padding: 1.5rem 1.5rem 1.5rem;
   overflow: hidden;
   flex: 1;
   background: #ffffff;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-toolbar {
@@ -422,9 +593,10 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 1.25rem;
   color: #475569;
   font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .modal-chip {
@@ -442,10 +614,12 @@ body {
 
 .modal-table {
   height: 100%;
-  overflow-y: auto;
+  overflow-y: scroll;
+  overflow-x: scroll;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
+  flex: 1;
 }
 
 .modal-content .table thead th {
@@ -476,6 +650,8 @@ body {
 
 .modal-content .table {
   border-color: #e2e8f0;
+  min-width: 100%;
+  width: max-content;
 }
 
 .modal-content .table td,
@@ -483,6 +659,8 @@ body {
   border-color: #e2e8f0;
   font-size: 0.9rem;
   vertical-align: middle;
+  white-space: nowrap;
+  padding: 0.75rem !important;
 }
 
 .modal-content a {

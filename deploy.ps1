@@ -1,21 +1,13 @@
 # NPTEL Vercel Deployment Script for Windows
 Write-Host "🚀 Building NPTEL project for Vercel..." -ForegroundColor Green
 
-# Install root dependencies
-Write-Host "`n📦 Installing root dependencies..." -ForegroundColor Cyan
-npm install
-
 # Install frontend dependencies
 Write-Host "`n📦 Installing frontend dependencies..." -ForegroundColor Cyan
-Set-Location frontend
-npm install
-Set-Location ..
+npm install --prefix frontend
 
 # Install sanity dependencies
 Write-Host "`n📦 Installing sanity dependencies..." -ForegroundColor Cyan
-Set-Location sanity
-npm install
-Set-Location ..
+npm install --prefix sanity
 
 # Build everything
 Write-Host "`n🏗️  Building all projects..." -ForegroundColor Cyan

@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build:all",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "npm install && cd frontend && npm install && cd ../sanity && npm install",
+  "rewrites": [
+    {
+      "source": "/sanity/:path*",
+      "destination": "/sanity/index.html"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "nptel-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:all": "npm run build:frontend && npm run build:sanity",
+    "build:frontend": "cd frontend && npm run build",
+    "build:sanity": "cd sanity && npm run build && npm run copy-sanity",
+    "copy-sanity": "node scripts/copy-sanity.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:sanity": "cd sanity && npm run dev"
+  }
+}

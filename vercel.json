@@ -1,7 +1,6 @@
 {
-  "buildCommand": "node scripts/build.mjs",
+  "buildCommand": "cd frontend && npm install && npm run build && cd ../sanity && npm install && npm run build && cd .. && node scripts/copy-sanity.js",
   "outputDirectory": "frontend/dist",
-  "installCommand": "node scripts/install.mjs",
   "rewrites": [
     {
       "source": "/sanity/:path*",

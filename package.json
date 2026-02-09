@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "npm run build --prefix frontend",
     "build:all": "node scripts/build.mjs",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:sanity": "cd sanity && npm run dev"

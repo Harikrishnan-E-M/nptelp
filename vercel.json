@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npm run build:all",
+  "buildCommand": "node scripts/build.mjs",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install --prefix frontend && npm install --prefix sanity",
+  "installCommand": "node scripts/install.mjs",
   "rewrites": [
     {
       "source": "/sanity/:path*",

@@ -3,17 +3,13 @@
 # NPTEL Vercel Deployment Script
 echo "🚀 Building NPTEL project for Vercel..."
 
-# Install frontend dependencies
-echo "📦 Installing frontend dependencies..."
-npm install --prefix frontend
-
-# Install sanity dependencies
-echo "📦 Installing sanity dependencies..."
-npm install --prefix sanity
+# Install all dependencies
+echo "📦 Installing dependencies..."
+node scripts/install.mjs
 
 # Build everything
 echo "🏗️  Building all projects..."
-npm run build:all
+node scripts/build.mjs
 
 echo "✅ Build complete! Ready to deploy to Vercel"
 echo ""

@@ -1,6 +1,4 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build && cd ../sanity && npm install && npm run build && cd .. && node scripts/copy-sanity.js",
-  "outputDirectory": "frontend/dist",
   "rewrites": [
     {
       "source": "/sanity/:path*",

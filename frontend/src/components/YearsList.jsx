@@ -30,9 +30,6 @@ function YearsList({ onYearSelect }) {
 
   return (
     <div>
-      <h2 className="page-title mb-4">
-        <i className="bi bi-award-fill me-2"></i>CSE - NPTEL Details
-      </h2>
 
       {error && <div className="alert alert-danger">{error}</div>}
 

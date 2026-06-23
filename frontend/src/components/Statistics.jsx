@@ -202,9 +202,7 @@ function Statistics({ year, onBack }) {
         <i className="bi bi-arrow-left me-2"></i>Back to Years
       </button>
 
-      <h2 className="page-title mb-4">
-        <i className="bi bi-bar-chart-fill me-2"></i>NPTEL Statistics ~ {year.yearLabel}
-      </h2>
+      <h2 className="year-heading-center">{year.yearLabel}</h2>
 
       {error && <div className="alert alert-danger">{error}</div>}
 

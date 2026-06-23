@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { client } from '../lib/sanityClient';
 
 function Statistics({ year, onBack }) {
   const [stats, setStats] = useState(null);
@@ -9,6 +9,7 @@ function Statistics({ year, onBack }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalData, setModalData] = useState([]);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   React.useEffect(() => {
     fetchStatistics();
@@ -17,11 +18,41 @@ function Statistics({ year, onBack }) {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/statistics/${year._id}`);
-      setStats(response.data);
+      let loadedFromBackend = false;
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/statistics/${year._id}`);
+        if (response.ok) {
+          const backendStats = await response.json();
+          setStats(backendStats);
+          loadedFromBackend = true;
+        }
+      } catch (backendError) {
+        console.error('Backend fetch failed:', backendError);
+      }
+
+      if (!loadedFromBackend) {
+        const query = `*[_type == "nptelData" && year._ref == $yearId] {
+          _id,
+          batch,
+          regNo,
+          name,
+          semester,
+          courseCode,
+          courseTitle,
+          credit,
+          score,
+          examMonth,
+          examYear,
+          certId,
+          proofUrl,
+          status
+        }`;
+        const data = await client.fetch(query, { yearId: year._id });
+        setStats({ data });
+      }
       setError(null);
     } catch (err) {
-      setError('Failed to load statistics');
+      setError('Failed to load statistics. Ensure the backend is running or CSV data is imported.');
       console.error(err);
       setStats(null);
     } finally {
@@ -36,16 +67,16 @@ function Statistics({ year, onBack }) {
     const total = data.length;
     
     // Elite + Gold: Score >= 90
-    const eliteGold = data.filter(item => item.score >= 90).length;
+    const eliteGold = data.filter(item => parseFloat(item.score) >= 90).length;
     
     // Elite + Silver: Score >= 75 and < 90
-    const eliteSilver = data.filter(item => item.score >= 75 && item.score < 90).length;
+    const eliteSilver = data.filter(item => parseFloat(item.score) >= 75 && parseFloat(item.score) < 90).length;
     
     // Elite: Score >= 60 and < 75
-    const elite = data.filter(item => item.score >= 60 && item.score < 75).length;
+    const elite = data.filter(item => parseFloat(item.score) >= 60 && parseFloat(item.score) < 75).length;
     
     // Successfully Completed: Score >= 40 and < 60
-    const successfullyCompleted = data.filter(item => item.score >= 40 && item.score < 60).length;
+    const successfullyCompleted = data.filter(item => parseFloat(item.score) >= 40 && parseFloat(item.score) < 60).length;
     
     return {
       total,
@@ -66,10 +97,10 @@ function Statistics({ year, onBack }) {
 
   const filterByCategory = (data, type) => {
     if (type === 'all') return data;
-    if (type === 'elite-gold') return data.filter(item => item.score >= 90);
-    if (type === 'elite-silver') return data.filter(item => item.score >= 75 && item.score < 90);
-    if (type === 'elite') return data.filter(item => item.score >= 60 && item.score < 75);
-    if (type === 'successfully-completed') return data.filter(item => item.score >= 40 && item.score < 60);
+    if (type === 'elite-gold') return data.filter(item => parseFloat(item.score) >= 90);
+    if (type === 'elite-silver') return data.filter(item => parseFloat(item.score) >= 75 && parseFloat(item.score) < 90);
+    if (type === 'elite') return data.filter(item => parseFloat(item.score) >= 60 && parseFloat(item.score) < 75);
+    if (type === 'successfully-completed') return data.filter(item => parseFloat(item.score) >= 40 && parseFloat(item.score) < 60);
     return data;
   };
 
@@ -113,10 +144,11 @@ function Statistics({ year, onBack }) {
       }
 
       acc[batchKey].total += 1;
-      if (item.score >= 90) acc[batchKey].eliteGold += 1;
-      else if (item.score >= 75) acc[batchKey].eliteSilver += 1;
-      else if (item.score >= 60) acc[batchKey].elite += 1;
-      else if (item.score >= 40) acc[batchKey].successfullyCompleted += 1;
+      const scoreNum = parseFloat(item.score);
+      if (scoreNum >= 90) acc[batchKey].eliteGold += 1;
+      else if (scoreNum >= 75) acc[batchKey].eliteSilver += 1;
+      else if (scoreNum >= 60) acc[batchKey].elite += 1;
+      else if (scoreNum >= 40) acc[batchKey].successfullyCompleted += 1;
 
       return acc;
     }, {});
@@ -167,7 +199,7 @@ function Statistics({ year, onBack }) {
   const filteredData = getFilteredData();
   const calculatedStats = calculateStats();
   const batchStats = calculateBatchStats();
-  const maxBatchTotal = Math.max(...batchStats.map(item => item.total), 1);
+  const maxBatchTotal = batchStats.length > 0 ? Math.max(...batchStats.map(item => item.total), 1) : 1;
   
   const getStatusClass = (status) => {
     if (status === 'Accepted') return 'status-success';

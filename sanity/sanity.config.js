@@ -10,6 +10,8 @@ export default defineConfig({
   projectId: '1asbko6r',
   dataset: 'production',
 
+  basePath: '/sanity',
+
   plugins: [structureTool(), visionTool()],
 
   schema: {

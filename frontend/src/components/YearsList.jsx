@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { client } from '../lib/sanityClient';
 
 function YearsList({ onYearSelect }) {
   const [years, setYears] = useState([]);
@@ -13,8 +13,17 @@ function YearsList({ onYearSelect }) {
   const fetchYears = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/years');
-      setYears(response.data);
+      const query = `*[_type == "academicYear"] | order(yearLabel desc) {
+        _id,
+        yearLabel,
+        startYear,
+        endYear,
+        description,
+        _createdAt,
+        dataCount
+      }`;
+      const data = await client.fetch(query);
+      setYears(data);
       setError(null);
     } catch (err) {
       setError('Failed to load academic years');

@@ -77,7 +77,7 @@ async function replaceYearData(yearId, rows) {
     batch.forEach((row) => {
       tx.create({
         _type: 'nptelData',
-        year: { _type: 'reference', _ref: yearId },
+        year: { _type: 'reference', _ref: yearId, _weak: true },
         batch: row.batch,
         regNo: row.regNo,
         name: row.name,

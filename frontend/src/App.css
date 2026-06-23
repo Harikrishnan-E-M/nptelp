@@ -9,7 +9,7 @@
 
 .site-header {
   background: #ffffff;
-  border-bottom: 3px solid #1a56db;
+  border-bottom: 3px solid #80af3a;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
@@ -54,7 +54,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: #1a56db;
+  color: #009EDB;
   margin: 0;
   line-height: 1.2;
 }
@@ -79,11 +79,11 @@
   font-family: 'Inter', 'Segoe UI', sans-serif;
   font-size: 1.75rem;
   font-weight: 800;
-  color: #1a56db;
+  color: #009EDB;
   letter-spacing: 0.04em;
   margin: 0.5rem 0 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 3px solid #1a56db;
+  border-bottom: 3px solid #91C04A;
 }
 
 body {

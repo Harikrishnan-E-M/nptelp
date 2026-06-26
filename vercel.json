@@ -1,13 +1,9 @@
 {
-  "functions": {
-    "api/statistics/[yearId].js": {
-      "maxDuration": 60
-    }
-  },
   "rewrites": [
     {
       "source": "/sanity/:path*",
       "destination": "/sanity/index.html"
     }
   ]
-}
+}
+

@@ -35,11 +35,12 @@ runCommand('npm run build', frontendDir);
 const sanityDir = join(rootDir, 'sanity');
 runCommand('npm run build', sanityDir);
 
+const frontendDistPath = join(frontendDir, 'dist');
+
 // Copy Sanity Studio to frontend dist
 console.log('\n📦 Copying Sanity Studio to frontend dist...');
 const sanityDistPath = join(sanityDir, 'dist');
-const frontendDistPath = join(frontendDir, 'dist');
-const targetPath = join(frontendDistPath, 'sanity');
+const sanityTargetPath = join(frontendDistPath, 'sanity');
 
 if (!existsSync(frontendDistPath)) {
   console.error('❌ Frontend dist directory does not exist');
@@ -51,11 +52,13 @@ if (!existsSync(sanityDistPath)) {
   process.exit(1);
 }
 
-if (!existsSync(targetPath)) {
-  mkdirSync(targetPath, { recursive: true });
+if (!existsSync(sanityTargetPath)) {
+  mkdirSync(sanityTargetPath, { recursive: true });
 }
 
-cpSync(sanityDistPath, targetPath, { recursive: true });
-
+cpSync(sanityDistPath, sanityTargetPath, { recursive: true });
 console.log('✅ Sanity Studio copied successfully!');
+
 console.log('\n🎉 Build complete!');
+
+

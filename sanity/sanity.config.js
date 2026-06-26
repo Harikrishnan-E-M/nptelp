@@ -2,6 +2,7 @@ import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './schemaTypes'
+import {csvImporterPlugin} from './plugins/csvImporter'
 
 export default defineConfig({
   name: 'default',
@@ -12,9 +13,10 @@ export default defineConfig({
 
   basePath: '/sanity',
 
-  plugins: [structureTool(), visionTool()],
+  plugins: [structureTool(), visionTool(), csvImporterPlugin()],
 
   schema: {
     types: schemaTypes,
   },
 })
+

@@ -9,7 +9,6 @@ function Statistics({ year, onBack }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalData, setModalData] = useState([]);
-  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
 
   React.useEffect(() => {
     fetchStatistics();
@@ -18,47 +17,34 @@ function Statistics({ year, onBack }) {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      let loadedFromBackend = false;
-      try {
-        const response = await fetch(`${apiBaseUrl}/api/statistics/${year._id}`);
-        if (response.ok) {
-          const backendStats = await response.json();
-          setStats(backendStats);
-          loadedFromBackend = true;
-        }
-      } catch (backendError) {
-        console.error('Backend fetch failed:', backendError);
-      }
-
-      if (!loadedFromBackend) {
-        const query = `*[_type == "nptelData" && year._ref == $yearId] {
-          _id,
-          batch,
-          regNo,
-          name,
-          semester,
-          courseCode,
-          courseTitle,
-          credit,
-          score,
-          examMonth,
-          examYear,
-          certId,
-          proofUrl,
-          status
-        }`;
-        const data = await client.fetch(query, { yearId: year._id });
-        setStats({ data });
-      }
+      const query = `*[_type == "nptelData" && year._ref == $yearId] {
+        _id,
+        batch,
+        regNo,
+        name,
+        semester,
+        courseCode,
+        courseTitle,
+        credit,
+        score,
+        examMonth,
+        examYear,
+        certId,
+        proofUrl,
+        status
+      }`;
+      const data = await client.fetch(query, { yearId: year._id });
+      setStats({ data });
       setError(null);
     } catch (err) {
-      setError('Failed to load statistics. Ensure the backend is running or CSV data is imported.');
+      setError('Failed to load data from Sanity.');
       console.error(err);
       setStats(null);
     } finally {
       setLoading(false);
     }
   };
+
 
   const calculateStats = () => {
     if (!stats || !stats.data) return null;
@@ -238,8 +224,17 @@ function Statistics({ year, onBack }) {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
+      {/* No data message */}
+      {stats && stats.data && stats.data.length === 0 && (
+        <div className="alert alert-info mt-3">
+          <strong>No data found for {year.yearLabel}.</strong><br />
+          Please go to <a href="/sanity" target="_blank" rel="noreferrer"><strong>Sanity Studio → Academic Year</strong></a>, open this year's document, and click <strong>"📥 Import CSV Data"</strong> to load the CSV.
+        </div>
+      )}
+
       {/* Statistics Cards */}
       {calculatedStats && (
+
         <div className="row mb-4">
           <div className="col-lg-3 col-md-6 mb-3">
             <div 

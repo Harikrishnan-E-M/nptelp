@@ -208,18 +208,92 @@ function PublishAndImportCsvAction({id, type}) {
   }
 }
 
+// ==================== CUSTOM DELETE ACTION ====================
+// This replaces the default "Delete" button. It deletes all associated nptelData
+// records first, then deletes the academicYear document.
+function DeleteAndCleanupAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const yearId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+
+    // Show confirmation dialog before deleting (optional but good practice)
+    if (!window.confirm('Are you sure? This will delete the Academic Year and ALL associated NPTEL Data documents. This cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up associated data...'})
+
+    try {
+      // Step 1: Find all nptelData docs referencing this year
+      const existingIds = await client.fetch(
+        '*[_type == "nptelData" && year._ref == $yearId]._id',
+        {yearId}
+      )
+
+      // Step 2: Batch delete them
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} NPTEL records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((docId) => tx.delete(docId))
+          await tx.commit()
+        }
+      }
+
+      toast.push({status: 'info', title: 'Deleting Academic Year document...'})
+
+      // Step 3: Delete the academicYear document itself via standard action
+      deleteOp.execute()
+      
+      toast.push({
+        status: 'success',
+        title: 'Successfully deleted Academic Year and all its data.',
+      })
+    } catch (err) {
+      console.error('Delete cleanup error:', err)
+      toast.push({
+        status: 'error',
+        title: 'Failed to delete associated data',
+        description: err.message,
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, yearId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
 // ==================== PLUGIN ====================
 export const csvImporterPlugin = definePlugin({
   name: 'csv-importer',
   document: {
     actions: (prev, context) => {
       if (context.schemaType === 'academicYear') {
-        // Replace the built-in Publish action with our custom one
-        return prev.map((action) =>
-          action.action === 'publish' ? PublishAndImportCsvAction : action
-        )
+        // Replace the built-in Publish and Delete actions
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCsvAction
+          if (action.action === 'delete') return DeleteAndCleanupAction
+          return action
+        })
       }
       return prev
     },
   },
 })
+

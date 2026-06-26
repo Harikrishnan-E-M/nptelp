@@ -62,14 +62,21 @@ function parseCsvText(csvText) {
 }
 
 async function replaceYearData(yearId, rows) {
-  // Delete existing nptelData for this year
+  // Fetch existing IDs
   const existingIds = await client.fetch(
     '*[_type == "nptelData" && year._ref == $yearId]._id',
     { yearId }
   );
 
-  for (const id of existingIds) {
-    await client.delete(id);
+  // Batch-delete all existing records in ONE transaction (not one-by-one)
+  if (existingIds.length > 0) {
+    const batchSize = 100;
+    for (let i = 0; i < existingIds.length; i += batchSize) {
+      const batch = existingIds.slice(i, i + batchSize);
+      const tx = client.transaction();
+      batch.forEach((id) => tx.delete(id));
+      await tx.commit();
+    }
   }
 
   // Insert new rows in batches of 100
@@ -164,8 +171,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Import CSV data into nptelData if needed
-    await ensureCsvImported(yearId);
+    // Try to import CSV data — if it fails (e.g. timeout), still return existing data
+    try {
+      await ensureCsvImported(yearId);
+    } catch (importError) {
+      console.error('CSV import failed, serving existing data:', importError.message);
+    }
 
     // Fetch all nptelData for this year
     const query = `*[_type == "nptelData" && year._ref == $yearId] {

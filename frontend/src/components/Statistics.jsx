@@ -97,7 +97,7 @@ function Statistics({ year, onBack }) {
 
   const openModal = (title, data) => {
     setModalTitle(title);
-    setModalData(data);
+    setModalData([...data].sort((a, b) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true, sensitivity: 'base' })));
     setModalOpen(true);
   };
 
@@ -111,6 +111,35 @@ function Statistics({ year, onBack }) {
     if (stats && stats.data) {
       openModal(`${getCategoryLabel(type)} - ${year.yearLabel}`, filterByCategory(stats.data, type));
     }
+  };
+
+  const calculateCourseStats = () => {
+    if (!stats || !stats.data) return [];
+
+    const grouped = stats.data.reduce((acc, item) => {
+      const key = item.courseCode || 'Unknown';
+      if (!acc[key]) {
+        acc[key] = {
+          courseCode: item.courseCode || 'Unknown',
+          courseTitle: item.courseTitle || '-',
+          credit: item.credit || '-',
+          examPeriod: item.examMonth && item.examYear ? `${item.examMonth} ${item.examYear}` : '-',
+          total: 0,
+        };
+      }
+      acc[key].total += 1;
+      return acc;
+    }, {});
+
+    return Object.values(grouped).sort((a, b) =>
+      (a.courseCode || '').localeCompare(b.courseCode || '', undefined, { numeric: true, sensitivity: 'base' })
+    );
+  };
+
+  const handleCourseRowClick = (courseCode) => {
+    if (!stats || !stats.data) return;
+    const courseData = stats.data.filter(item => (item.courseCode || 'Unknown') === courseCode);
+    openModal(`Course: ${courseCode} — ${year.yearLabel}`, courseData);
   };
 
   const calculateBatchStats = () => {
@@ -184,6 +213,7 @@ function Statistics({ year, onBack }) {
 
   const filteredData = getFilteredData();
   const calculatedStats = calculateStats();
+  const courseStats = calculateCourseStats();
   const batchStats = calculateBatchStats();
   const maxBatchTotal = batchStats.length > 0 ? Math.max(...batchStats.map(item => item.total), 1) : 1;
   
@@ -291,7 +321,48 @@ function Statistics({ year, onBack }) {
         </div>
       )}
 <br></br>
-      
+
+      {/* Course-wise Summary Table */}
+      {courseStats.length > 0 && (
+        <div className="card shadow-sm mb-4">
+          <div className="card-body">
+            <h5 className="mb-3">Course-wise Summary</h5>
+            <div className="table-container">
+              <table className="table table-bordered table-hover align-middle" style={{ cursor: 'pointer' }}>
+                <thead className="table-dark">
+                  <tr>
+                    <th>#</th>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Credits</th>
+                    <th>Exam Period</th>
+                    <th>Total Students</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {courseStats.map((course, index) => (
+                    <tr
+                      key={course.courseCode}
+                      onClick={() => handleCourseRowClick(course.courseCode)}
+                      title={`Click to view all students in ${course.courseCode}`}
+                    >
+                      <td>{index + 1}</td>
+                      <td><strong>{course.courseCode}</strong></td>
+                      <td>{course.courseTitle}</td>
+                      <td>{course.credit}</td>
+                      <td>{course.examPeriod}</td>
+                      <td>
+                        <span className="badge bg-primary rounded-pill">{course.total}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
 <br></br>
       {/* Batch-wise Statistics Chart */}
       {calculatedStats && batchStats.length > 0 && (

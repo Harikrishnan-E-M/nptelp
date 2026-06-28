@@ -30,7 +30,7 @@ function App() {
             />
           </a>
           <div className="header-title-block">
-            <h1 className="header-title">NPTEL DETAILS</h1>
+            <h1 className="header-title">NPTEL DETAILS - COMPUTER SCIENCE AND ENGINEERING</h1>
           </div>
         </div>
       </header>

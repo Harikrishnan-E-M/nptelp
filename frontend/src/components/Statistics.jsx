@@ -9,6 +9,7 @@ function Statistics({ year, onBack }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalData, setModalData] = useState([]);
+  const [modalSort, setModalSort] = useState('rollno');
 
   React.useEffect(() => {
     fetchStatistics();
@@ -104,6 +105,29 @@ function Statistics({ year, onBack }) {
   const closeModal = () => {
     setModalOpen(false);
     setFilterType('all'); // Reset to 'all' when closing modal
+    setModalSort('rollno'); // Reset sort when closing modal
+  };
+
+  const getSortedModalData = () => {
+    const data = [...modalData];
+    if (modalSort === 'none') return data;
+    if (modalSort === 'name') {
+      return data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    if (modalSort === 'rollno') {
+      return data.sort((a, b) => (a.regNo || '').localeCompare(b.regNo || '', undefined, { numeric: true, sensitivity: 'base' }));
+    }
+    if (modalSort === 'marks') {
+      return data.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
+    }
+    if (modalSort === 'coursecode') {
+      return data.sort((a, b) => {
+        const codeCompare = (a.courseCode || '').localeCompare(b.courseCode || '', undefined, { numeric: true, sensitivity: 'base' });
+        if (codeCompare !== 0) return codeCompare;
+        return parseFloat(b.score || 0) - parseFloat(a.score || 0);
+      });
+    }
+    return data;
   };
 
   const handleCardClick = (type) => {
@@ -408,6 +432,21 @@ function Statistics({ year, onBack }) {
             <div className="modal-body">
               <div className="modal-toolbar">
                 <span className="modal-chip">Showing {modalData.length} records</span>
+                <div className="modal-sort-control">
+                  <label htmlFor="modal-sort-select" className="modal-sort-label">Sort by:</label>
+                  <select
+                    id="modal-sort-select"
+                    className="modal-sort-select"
+                    value={modalSort}
+                    onChange={(e) => setModalSort(e.target.value)}
+                  >
+                    <option value="none">None</option>
+                    <option value="name">Name</option>
+                    <option value="rollno">Roll No</option>
+                    <option value="marks">Marks</option>
+                    <option value="coursecode">Course Code</option>
+                  </select>
+                </div>
               </div>
               <div className="table-container modal-table">
                 <table className="table table-bordered table-striped align-middle">
@@ -429,7 +468,7 @@ function Statistics({ year, onBack }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {modalData.map((item, index) => (
+                    {getSortedModalData().map((item, index) => (
                       <tr key={item._id}>
                         <td>{index + 1}</td>
                         <td>{item.batch}</td>

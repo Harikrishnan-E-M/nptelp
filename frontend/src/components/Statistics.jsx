@@ -352,15 +352,15 @@ function Statistics({ year, onBack }) {
           <div className="card-body">
             <h5 className="mb-3">Course-wise Summary</h5>
             <div className="table-container">
-              <table className="table table-bordered table-hover align-middle" style={{ cursor: 'pointer' }}>
+              <table className="table table-bordered table-hover align-middle text-center" style={{ cursor: 'pointer' }}>
                 <thead className="table-dark">
                   <tr>
-                    <th>#</th>
-                    <th>Course Code</th>
-                    <th>Course Name</th>
-                    <th>Credits</th>
-                    <th>Exam Period</th>
-                    <th>Total Students</th>
+                    <th className="text-center">#</th>
+                    <th className="text-center">Course Code</th>
+                    <th className="text-center">Course Name</th>
+                    <th className="text-center">Credits</th>
+                    <th className="text-center">Exam Period</th>
+                    <th className="text-center">Total Students</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -449,27 +449,31 @@ function Statistics({ year, onBack }) {
                 </div>
               </div>
               <div className="table-container modal-table">
-                <table className="table table-bordered table-striped align-middle">
+                <table className="table table-bordered table-striped align-middle text-center">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Batch</th>
-                      <th>Reg No</th>
-                      <th>Name</th>
-                      <th>Sem</th>
-                      <th>Course Code</th>
-                      <th>Course Title</th>
-                      <th>Credit</th>
-                      <th>Score</th>
-                      <th>Exam</th>
-                      <th>Cert ID</th>
-                      <th>Proof</th>
-                      <th>Status</th>
+                      <th className="text-center">#</th>
+                      <th className="text-center">Batch</th>
+                      <th className="text-center">Reg No</th>
+                      <th className="text-center">Name</th>
+                      <th className="text-center">Sem</th>
+                      <th className="text-center">Course Code</th>
+                      <th className="text-center">Course Title</th>
+                      <th className="text-center">Credit</th>
+                      <th className="text-center">Score</th>
+                      <th className="text-center">Exam</th>
+                      <th className="text-center">Cert ID</th>
+                      <th className="text-center">Certificate</th>
                     </tr>
                   </thead>
                   <tbody>
                     {getSortedModalData().map((item, index) => (
-                      <tr key={item._id}>
+                      <tr
+                        key={item._id}
+                        onClick={() => item.proofUrl && window.open(item.proofUrl, '_blank', 'noreferrer')}
+                        style={{ cursor: item.proofUrl ? 'pointer' : 'default' }}
+                        title={item.proofUrl ? 'Click to view certificate' : 'No certificate available'}
+                      >
                         <td>{index + 1}</td>
                         <td>{item.batch}</td>
                         <td>{item.regNo}</td>
@@ -483,15 +487,10 @@ function Statistics({ year, onBack }) {
                         <td>{item.certId}</td>
                         <td>
                           {item.proofUrl ? (
-                            <a href={item.proofUrl} target="_blank" rel="noreferrer">View</a>
+                            <span className="cert-link-badge">🔗 View</span>
                           ) : (
-                            'NA'
+                            <span className="text-muted">—</span>
                           )}
-                        </td>
-                        <td>
-                          <span className={`badge-status ${getStatusClass(item.status)}`}>
-                            {item.status || 'N/A'}
-                          </span>
                         </td>
                       </tr>
                     ))}

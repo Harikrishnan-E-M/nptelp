@@ -40,7 +40,7 @@ function SectionDetail({ docId, docType, onBack, menuLabel }) {
             courseCode,
             courseName,
             ${typeFieldName},
-            proof
+            proofs[] { label, url }
           }
         }
       }`;
@@ -167,20 +167,28 @@ function SectionDetail({ docId, docType, onBack, menuLabel }) {
                       </thead>
                       <tbody>
                         {items.map((item, iIdx) => (
-                          <tr
-                            key={iIdx}
-                            onClick={() => item.proof && window.open(item.proof, '_blank', 'noreferrer')}
-                            style={{ cursor: item.proof ? 'pointer' : 'default' }}
-                            title={item.proof ? 'Click to view proof' : 'No proof link available'}
-                          >
+                          <tr key={iIdx}>
                             <td>{iIdx + 1}</td>
                             <td><strong>{item.name || '—'}</strong></td>
                             <td>{item.courseCode || '—'}</td>
                             <td>{item.courseName || '—'}</td>
                             <td>{item[typeFieldName] || '—'}</td>
                             <td>
-                              {item.proof ? (
-                                <span className="cert-link-badge">🔗 View</span>
+                              {item.proofs && item.proofs.length > 0 ? (
+                                <div className="proof-links-cell">
+                                  {item.proofs.map((p, pIdx) => (
+                                    <a
+                                      key={pIdx}
+                                      href={p.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="cert-link-badge proof-btn"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      🔗 {p.label || `View Proof ${pIdx + 1}`}
+                                    </a>
+                                  ))}
+                                </div>
                               ) : (
                                 <span className="text-muted">—</span>
                               )}

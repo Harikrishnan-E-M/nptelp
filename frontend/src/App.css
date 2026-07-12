@@ -200,6 +200,32 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* Multiple proof links in a cell */
+.proof-links-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+
+.proof-btn {
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.12s;
+  white-space: nowrap;
+}
+
+.proof-btn:hover {
+  background: #1d4ed8;
+  color: #fff;
+  transform: scale(1.04);
+  text-decoration: none;
+}
+
+.proof-btn:active {
+  transform: scale(0.97);
+}
+
 .year-card {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;

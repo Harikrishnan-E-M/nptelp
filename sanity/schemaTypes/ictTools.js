@@ -85,10 +85,35 @@ export const ictTools = defineType({
                       description: 'e.g. Simulation, Video, Animation, etc.',
                     }),
                     defineField({
-                      name: 'proof',
-                      type: 'url',
-                      title: 'Proof (URL)',
-                      description: 'Link to proof/evidence of ICT tool usage',
+                      name: 'proofs',
+                      type: 'array',
+                      title: 'Proof Links',
+                      description: 'Add one or more proof/evidence links for this ICT tool entry',
+                      of: [
+                        {
+                          type: 'object',
+                          name: 'proofItem',
+                          title: 'Proof',
+                          fields: [
+                            defineField({
+                              name: 'label',
+                              type: 'string',
+                              title: 'Label',
+                              description: 'e.g. Proof 1, Certificate, Screenshot',
+                            }),
+                            defineField({
+                              name: 'url',
+                              type: 'url',
+                              title: 'URL',
+                              description: 'Link to the proof',
+                              validation: (Rule) => Rule.required(),
+                            }),
+                          ],
+                          preview: {
+                            select: { title: 'label', subtitle: 'url' },
+                          },
+                        },
+                      ],
                     }),
                   ],
                   preview: {

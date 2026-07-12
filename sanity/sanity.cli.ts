@@ -4,5 +4,10 @@ export default defineCliConfig({
   api: {
     projectId: '1asbko6r',
     dataset: 'production'
-  }
+  },
+  studioHost: 'nptelp-admin'
 })
+
+
+
+

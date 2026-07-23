@@ -285,6 +285,19 @@ body {
   background: #f0f9ff;
 }
 
+.stats-cards-row {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex-wrap: nowrap;
+}
+
+.stats-cards-row .stat-card {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 1.25rem 0.75rem;
+}
+
 .stat-title {
   font-size: 0.875rem;
   color: #6b7280;

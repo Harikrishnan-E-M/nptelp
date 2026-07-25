@@ -25,8 +25,7 @@ function SemesterYearList({ docType, onSelect }) {
         _id,
         yearLabel,
         semester,
-        pageTitle,
-        "sectionCount": count(sections)
+        pageTitle
       }`;
       const data = await client.fetch(query, { docType });
       setDocs(data);
@@ -66,9 +65,6 @@ function SemesterYearList({ docType, onSelect }) {
                   {doc.pageTitle && (
                     <p className="card-text small text-secondary mt-1">{doc.pageTitle}</p>
                   )}
-                  <p className="card-text text-muted" style={{ fontSize: '0.85rem' }}>
-                    {doc.sectionCount > 0 ? `${doc.sectionCount} section(s)` : 'No sections yet'}
-                  </p>
                   <button
                     className="btn btn-primary btn-sm w-100"
                     onClick={() => onSelect(doc)}

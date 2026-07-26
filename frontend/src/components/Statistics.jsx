@@ -225,7 +225,7 @@ function Statistics({ year, onBack }) {
       >
         <div className="batch-bar-label">{label}</div>
         <div className="batch-bar-wrapper">
-          <div className="batch-bar-value-badge">{value}</div>
+          <div className="batch-bar-value-badge">{value === 0 ? '-' : value}</div>
           <div className="batch-bar-track">
             <div
               className={`batch-bar-fill ${colorClass}`}
@@ -394,16 +394,16 @@ function Statistics({ year, onBack }) {
                         <span className="badge bg-primary rounded-pill">{course.total}</span>
                       </td>
                       <td>
-                        <span className="badge bg-warning text-dark rounded-pill">{course.eliteGold}</span>
+                        {course.eliteGold === 0 ? '-' : <span className="badge bg-warning text-dark rounded-pill">{course.eliteGold}</span>}
                       </td>
                       <td>
-                        <span className="badge bg-info text-dark rounded-pill">{course.eliteSilver}</span>
+                        {course.eliteSilver === 0 ? '-' : <span className="badge bg-info text-dark rounded-pill">{course.eliteSilver}</span>}
                       </td>
                       <td>
-                        <span className="badge bg-success rounded-pill">{course.elite}</span>
+                        {course.elite === 0 ? '-' : <span className="badge bg-success rounded-pill">{course.elite}</span>}
                       </td>
                       <td>
-                        <span className="badge bg-secondary rounded-pill">{course.successfullyCompleted}</span>
+                        {course.successfullyCompleted === 0 ? '-' : <span className="badge bg-secondary rounded-pill">{course.successfullyCompleted}</span>}
                       </td>
                     </tr>
                   ))}

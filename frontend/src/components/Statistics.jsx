@@ -250,6 +250,16 @@ function Statistics({ year, onBack }) {
   const batchStats = calculateBatchStats();
   const maxBatchTotal = batchStats.length > 0 ? Math.max(...batchStats.map(item => item.total), 1) : 1;
   
+  const getYearOfStudy = (sem) => {
+    const s = parseInt(sem, 10);
+    if (s <= 2) return 'I';
+    if (s <= 4) return 'II';
+    if (s <= 6) return 'III';
+    if (s <= 8) return 'IV';
+    if (s <= 10) return 'V';
+    return 'VI';
+  };
+
   const getStatusClass = (status) => {
     if (status === 'Accepted') return 'status-success';
     if (status === 'Rejected') return 'status-rejected';
@@ -484,6 +494,7 @@ function Statistics({ year, onBack }) {
                       <th className="text-center">Reg No</th>
                       <th className="text-center">Name</th>
                       <th className="text-center">Sem</th>
+                      <th className="text-center">Year</th>
                       <th className="text-center">Course Code</th>
                       <th className="text-center">Course Title</th>
                       <th className="text-center">Credit</th>
@@ -506,6 +517,7 @@ function Statistics({ year, onBack }) {
                         <td>{item.regNo}</td>
                         <td>{item.name}</td>
                         <td>{item.semester}</td>
+                        <td>{item.semester ? getYearOfStudy(item.semester) : '-'}</td>
                         <td>{item.courseCode}</td>
                         <td>{item.courseTitle}</td>
                         <td>{item.credit}</td>

@@ -1071,4 +1071,76 @@ body {
   flex: 1;
   text-align: center;
 }
+
+/* ═══════════════════════════════════════════════════════
+   Faculty Certification — stat pills & grade badge
+   ═══════════════════════════════════════════════════════ */
+
+/* Pill used inside year cards */
+.faculty-stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(26, 3, 140, 0.07);
+  border: 1px solid rgba(26, 3, 140, 0.15);
+  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+  min-width: 90px;
+  flex: 1;
+}
+
+.faculty-stat-pill--completed {
+  background: rgba(128, 175, 58, 0.1);
+  border-color: rgba(128, 175, 58, 0.25);
+}
+
+.faculty-stat-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.faculty-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1a038c;
+  line-height: 1;
+}
+
+.faculty-stat-pill--completed .faculty-stat-value {
+  color: #5a8a1e;
+}
+
+/* Inline pill used in the stats bar above the table */
+.faculty-inline-pill {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  min-width: unset;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1a038c;
+}
+
+.faculty-inline-pill.faculty-stat-pill--completed {
+  color: #5a8a1e;
+}
+
+/* Grade badge in the table cell */
+.cert-grade-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #1a038c 0%, #4a2fc5 100%);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+}
 

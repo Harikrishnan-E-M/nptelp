@@ -3,6 +3,8 @@ import YearsList from './components/YearsList';
 import Statistics from './components/Statistics';
 import SemesterYearList from './components/SemesterYearList';
 import SectionDetail from './components/SectionDetail';
+import FacultyCertYearList from './components/FacultyCertYearList';
+import FacultyCertDetail from './components/FacultyCertDetail';
 import './App.css';
 
 function App() {
@@ -20,8 +22,8 @@ function App() {
     setSelectedYear(null);
   };
 
-  // ── Active menu tab ──────────────────────────────────────
-  // 'nptel' | 'ict' | 'innovative'
+  // ── Active menu tab ──────────────────────────────────────────
+  // 'nptel' | 'ict' | 'innovative' | 'faculty'
   const [activeMenu, setActiveMenu] = useState('nptel');
 
   // ── ICT Tools state ──────────────────────────────────────
@@ -30,13 +32,19 @@ function App() {
   const handleIctSelect = (doc) => setSelectedIctDoc(doc);
   const handleIctBack = () => setSelectedIctDoc(null);
 
-  // ── Innovative Teaching state ────────────────────────────
+  // ── Innovative Teaching state ────────────────────────────────────
   const [selectedInnoDoc, setSelectedInnoDoc] = useState(null);
 
   const handleInnoSelect = (doc) => setSelectedInnoDoc(doc);
   const handleInnoBack = () => setSelectedInnoDoc(null);
 
-  // ── Switch menu (reset sub-navigation) ──────────────────
+  // ── Faculty Certification state ─────────────────────────────────
+  const [selectedFacultyYear, setSelectedFacultyYear] = useState(null);
+
+  const handleFacultySelect = (doc) => setSelectedFacultyYear(doc);
+  const handleFacultyBack = () => setSelectedFacultyYear(null);
+
+  // ── Switch menu (reset sub-navigation) ────────────────────────
   const switchMenu = (tab) => {
     setActiveMenu(tab);
     // Reset NPTEL sub-navigation when leaving the tab
@@ -51,6 +59,10 @@ function App() {
     // Reset Innovative sub-navigation when leaving
     if (tab !== 'innovative') {
       setSelectedInnoDoc(null);
+    }
+    // Reset Faculty Certification sub-navigation when leaving
+    if (tab !== 'faculty') {
+      setSelectedFacultyYear(null);
     }
   };
 
@@ -92,6 +104,12 @@ function App() {
             onClick={() => switchMenu('innovative')}
           >
             <i className="bi bi-lightbulb me-2"></i>Innovative Teaching Activity
+          </button>
+          <button
+            className={`nav-tab ${activeMenu === 'faculty' ? 'nav-tab-active' : ''}`}
+            onClick={() => switchMenu('faculty')}
+          >
+            <i className="bi bi-award me-2"></i>Faculty Certification
           </button>
         </div>
       </nav>
@@ -141,6 +159,21 @@ function App() {
                 docType="innovativeTeaching"
                 onBack={handleInnoBack}
                 menuLabel="Innovative Teaching Activity"
+              />
+            )}
+          </>
+        )}
+
+        {/* ─── Faculty Certification ─── */}
+        {activeMenu === 'faculty' && (
+          <>
+            {!selectedFacultyYear ? (
+              <FacultyCertYearList onSelect={handleFacultySelect} />
+            ) : (
+              <FacultyCertDetail
+                docId={selectedFacultyYear._id}
+                yearLabel={selectedFacultyYear.yearLabel}
+                onBack={handleFacultyBack}
               />
             )}
           </>

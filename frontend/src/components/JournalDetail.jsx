@@ -63,17 +63,22 @@ function JournalDetail() {
 
   return (
     <div>
-      {/* Controls bar */}
+      {/* Controls bar — Sort + Record count in one row */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1rem',
+          gap: '0.5rem',
+          marginBottom: '0.75rem',
         }}
       >
+        {/* Record count */}
+        <span className="section-meta-count">
+          {rows.length} record{rows.length !== 1 ? 's' : ''}
+        </span>
+
         {/* Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <label className="modal-sort-label" htmlFor="journal-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
@@ -90,13 +95,6 @@ function JournalDetail() {
             <option value="year">Year</option>
           </select>
         </div>
-      </div>
-
-      {/* Record count */}
-      <div className="section-meta-bar" style={{ marginBottom: '1rem' }}>
-        <span className="section-meta-count">
-          {rows.length} record{rows.length !== 1 ? 's' : ''}
-        </span>
       </div>
 
       {error && <div className="alert alert-danger mt-3">{error}</div>}

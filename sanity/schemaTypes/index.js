@@ -12,6 +12,8 @@ import {nonFormal} from './nonFormal'
 import {nonFormalData} from './nonFormalData'
 import {journal} from './journal'
 import {journalData} from './journalData'
+import {scopus} from './scopus'
+import {scopusData} from './scopusData'
 
 export const schemaTypes = [
   academicYear,
@@ -28,4 +30,6 @@ export const schemaTypes = [
   nonFormalData,
   journal,
   journalData,
+  scopus,
+  scopusData,
 ]

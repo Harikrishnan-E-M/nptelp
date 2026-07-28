@@ -1077,6 +1077,14 @@ export const csvImporterPlugin = definePlugin({
           return action
         })
       }
+      // Scopus — custom publish (CSV import) + cleanup delete
+      if (context.schemaType === 'scopus') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportScopusCsvAction
+          if (action.action === 'delete') return DeleteAndCleanupScopusAction
+          return action
+        })
+      }
       return prev
     },
   },
@@ -1084,7 +1092,7 @@ export const csvImporterPlugin = definePlugin({
 
 // ==================== CSV PARSING — NON FORMAL ====================
 // Columns: Student Name | Roll Number | Section | Number of Non formal Course Completed
-//          | Course Name 1 | Proof | Course Name 2 | Proof2
+//          | Course Name 1 | Course Name 2
 function parseNonFormalCsvText(csvText) {
   const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
   const lines = cleanText.split(/\r?\n/)
@@ -1120,9 +1128,7 @@ function parseNonFormalCsvText(csvText) {
       section:             stripInvisible(cols[2] || ''),
       nonFormalCourseCount: parseInt(cols[3], 10) || null,
       courseName1:         stripInvisible(cols[4] || ''),
-      proof1:              stripInvisible(cols[5] || ''),
-      courseName2:         stripInvisible(cols[6] || ''),
-      proof2:              stripInvisible(cols[7] || ''),
+      courseName2:         stripInvisible(cols[5] || ''),
     })
   }
 
@@ -1224,9 +1230,7 @@ function PublishAndImportNonFormalCsvAction({id, type}) {
               section:              row.section || undefined,
               nonFormalCourseCount: row.nonFormalCourseCount,
               courseName1:          row.courseName1 || undefined,
-              proof1:               row.proof1 || undefined,
               courseName2:          row.courseName2 || undefined,
-              proof2:               row.proof2 || undefined,
             })
           })
           await tx.commit()
@@ -1564,6 +1568,257 @@ function DeleteAndCleanupJournalAction({id, type}) {
       toast.push({
         status: 'error',
         title: 'Failed to delete associated journal data',
+        description: err.message,
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+// ==================== CSV PARSING — SCOPUS ====================
+// Columns: SI.No | Title of the paper | Name of the Conference/Venue
+//          | International/National | Date | Authors | Indexed | Publisher | Website link
+function parseScopusCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const paperTitle = stripInvisible(cols[1] || '')
+    if (!paperTitle) continue // must have a title
+
+    rows.push({
+      sNo:            parseInt(cols[0], 10) || null,
+      paperTitle,
+      conferenceName: stripInvisible(cols[2] || ''),
+      intlNational:   stripInvisible(cols[3] || ''),
+      date:           stripInvisible(cols[4] || ''),
+      authors:        stripInvisible(cols[5] || ''),
+      indexed:        stripInvisible(cols[6] || ''),
+      publisher:      stripInvisible(cols[7] || ''),
+      webLink:        stripInvisible(cols[8] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — SCOPUS ====================
+function PublishAndImportScopusCsvAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing document...'})
+
+    setTimeout(async () => {
+      try {
+        toast.push({status: 'info', title: 'Checking CSV file...'})
+
+        const doc = await client.fetch(
+          `*[_type == "scopus" && _id == $docId][0]{
+            _id,
+            csvAssetId,
+            dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({
+            status: 'success',
+            title: 'Published successfully',
+            description: 'No CSV file attached — nothing to import.',
+          })
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({
+            status: 'success',
+            title: 'Published! CSV already up to date.',
+            description: `${doc.dataCount} records already imported from this file.`,
+          })
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing Scopus CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseScopusCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "scopusData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} Scopus records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'scopusData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:            row.sNo,
+              paperTitle:     row.paperTitle,
+              conferenceName: row.conferenceName || undefined,
+              intlNational:   row.intlNational || undefined,
+              date:           row.date || undefined,
+              authors:        row.authors || undefined,
+              indexed:        row.indexed || undefined,
+              publisher:      row.publisher || undefined,
+              webLink:        row.webLink || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client
+          .patch(docId)
+          .set({
+            dataCount: rows.length,
+            csvAssetId: assetId,
+            csvImportedAt: new Date().toISOString(),
+          })
+          .commit()
+
+        toast.push({
+          status: 'success',
+          title: `✅ Published & imported ${rows.length} Scopus records!`,
+          description: 'Data is now live on the frontend.',
+        })
+      } catch (err) {
+        console.error('Scopus CSV import error:', err)
+        toast.push({
+          status: 'error',
+          title: 'Scopus CSV import failed (document is still published)',
+          description: err.message,
+        })
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — SCOPUS ====================
+function DeleteAndCleanupScopusAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+
+    if (!window.confirm('Are you sure? This will delete the Scopus year AND ALL associated records. This cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up Scopus data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "scopusData" && parent._ref == $docId]._id',
+        {docId}
+      )
+
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} Scopus records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+
+      toast.push({status: 'info', title: 'Deleting Scopus year document...'})
+      deleteOp.execute()
+
+      toast.push({
+        status: 'success',
+        title: 'Successfully deleted Scopus year and all its data.',
+      })
+    } catch (err) {
+      console.error('Scopus delete cleanup error:', err)
+      toast.push({
+        status: 'error',
+        title: 'Failed to delete associated Scopus data',
         description: err.message,
       })
     } finally {

@@ -10,6 +10,7 @@ import MiniProjectDetail from './components/MiniProjectDetail';
 import NonFormalDetail from './components/NonFormalDetail';
 import GenericYearList from './components/GenericYearList';
 import JournalDetail from './components/JournalDetail';
+import ScopusDetail from './components/ScopusDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ const MENU_STRUCTURE = [
   {
     id: '2.2', label: '2.2', children: [
       { id: 'journal', label: 'Journal' },
+      { id: 'scopus',  label: 'Scopus / Conference' },
     ],
   },
   { id: '2.3', label: '2.3', children: [] },
@@ -56,6 +58,7 @@ const VIEW_LABELS = {
   'ict':           'ICT Tools',
   'innovative':    'Innovative Teaching Activity',
   'journal':       'Journal',
+  'scopus':        'Scopus / Conference Papers',
   'case-study':    'Case Study',
   'mini-project':  'Mini Project',
   'student-nptel': 'Student NPTEL Certification',
@@ -153,6 +156,9 @@ function App() {
   // ── Non Formal state ──────────────────────────────────────────────────────
   const [selectedNonFormalDoc, setSelectedNonFormalDoc] = useState(null);
 
+  // ── Scopus state ──────────────────────────────────────────────────────────
+  const [selectedScopusDoc, setSelectedScopusDoc] = useState(null);
+
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -172,6 +178,7 @@ function App() {
     setSelectedCaseStudyDoc(null);
     setSelectedMiniProjectDoc(null);
     setSelectedNonFormalDoc(null);
+    setSelectedScopusDoc(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -308,6 +315,23 @@ function App() {
           {/* ─── Journal ─── */}
           {activeView === 'journal' && (
             <JournalDetail />
+          )}
+
+          {/* ─── Scopus / Conference ─── */}
+          {activeView === 'scopus' && (
+            selectedScopusDoc ? (
+              <ScopusDetail
+                parentDocId={selectedScopusDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedScopusDoc.yearLabel}
+                onBack={() => setSelectedScopusDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="scopus"
+                iconClass="bi-journals"
+                onSelect={(doc) => setSelectedScopusDoc(doc)}
+              />
+            )
           )}
 
           {/* ─── Case Study ─── */}

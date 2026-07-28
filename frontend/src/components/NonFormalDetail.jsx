@@ -11,7 +11,7 @@ const sanitize = (str) => {
 
 /**
  * NonFormalDetail — fetches nonFormalData records for a specific year document.
- * Columns: Student Name | Roll Number | Section | # Courses | Course 1 | Proof | Course 2 | Proof2
+ * Columns: Student Name | Roll Number | Section | # Courses | Course 1 | Course 2
  */
 function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
@@ -35,9 +35,7 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
         section,
         nonFormalCourseCount,
         courseName1,
-        proof1,
-        courseName2,
-        proof2
+        courseName2
       }`;
       const data = await client.fetch(query, { parentDocId });
       setRows(data);
@@ -67,24 +65,30 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
   return (
     <div>
       {/* Top Header */}
-      <div className="d-flex align-items-center mb-4">
+      <div className="d-flex align-items-center mb-3">
         <button className="btn btn-outline-secondary me-3" onClick={onBack}>
           <i className="bi bi-arrow-left me-1"></i>Back
         </button>
         <h4 className="mb-0">Non Formal Education — {yearLabel}</h4>
       </div>
 
-      {/* Controls bar */}
+      {/* Controls bar — Sort + Record count in one row */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1rem',
+          gap: '0.5rem',
+          marginBottom: '0.75rem',
         }}
       >
+        {/* Record count */}
+        <span className="section-meta-count">
+          {rows.length} record{rows.length !== 1 ? 's' : ''}
+        </span>
+
+        {/* Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <label className="modal-sort-label" htmlFor="nf-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
             <i className="bi bi-sort-alpha-down me-1"></i>Sort by:
@@ -100,13 +104,6 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
             <option value="section">Section</option>
           </select>
         </div>
-      </div>
-
-      {/* Record count */}
-      <div className="section-meta-bar" style={{ marginBottom: '1rem' }}>
-        <span className="section-meta-count">
-          {rows.length} record{rows.length !== 1 ? 's' : ''}
-        </span>
       </div>
 
       {error && <div className="alert alert-danger mt-3">{error}</div>}
@@ -125,9 +122,7 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
                 <th>Section</th>
                 <th>No. of Courses</th>
                 <th className="text-start">Course Name 1</th>
-                <th>Proof</th>
                 <th className="text-start">Course Name 2</th>
-                <th>Proof2</th>
               </tr>
             </thead>
             <tbody>
@@ -144,35 +139,7 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
                       : <span className="text-muted">—</span>}
                   </td>
                   <td className="text-start">{sanitize(row.courseName1) || '—'}</td>
-                  <td>
-                    {sanitize(row.proof1) ? (
-                      <a
-                        href={sanitize(row.proof1)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="cert-link-badge"
-                      >
-                        <i className="bi bi-box-arrow-up-right me-1"></i>View
-                      </a>
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
                   <td className="text-start">{sanitize(row.courseName2) || '—'}</td>
-                  <td>
-                    {sanitize(row.proof2) ? (
-                      <a
-                        href={sanitize(row.proof2)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="cert-link-badge"
-                      >
-                        <i className="bi bi-box-arrow-up-right me-1"></i>View
-                      </a>
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>

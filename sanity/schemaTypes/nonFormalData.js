@@ -41,19 +41,9 @@ export const nonFormalData = defineType({
       title: 'Course Name 1',
     }),
     defineField({
-      name: 'proof1',
-      type: 'url',
-      title: 'Proof (Course 1)',
-    }),
-    defineField({
       name: 'courseName2',
       type: 'string',
       title: 'Course Name 2',
-    }),
-    defineField({
-      name: 'proof2',
-      type: 'url',
-      title: 'Proof2 (Course 2)',
     }),
   ],
   preview: {

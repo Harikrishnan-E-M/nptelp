@@ -1,16 +1,16 @@
 import {defineField, defineType} from 'sanity'
 
-// ── Non Formal document ───────────────────────────────────────────────────────
-export const nonFormal = defineType({
-  name: 'nonFormal',
+// ── Scopus year document ───────────────────────────────────────────────────────
+export const scopus = defineType({
+  name: 'scopus',
   type: 'document',
-  title: 'Non Formal',
+  title: 'Scopus / Conference Upload',
   fields: [
     defineField({
       name: 'yearLabel',
       type: 'string',
-      title: 'Year',
-      description: 'e.g., 2024-28',
+      title: 'Year / Label',
+      description: 'e.g., 2025-26',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -23,7 +23,7 @@ export const nonFormal = defineType({
       type: 'file',
       title: 'CSV File',
       description:
-        'Upload the Non Formal CSV (columns: Student Name, Roll Number, Section, Number of Non formal Course Completed, Course Name 1, Course Name 2).',
+        'Upload the Scopus CSV (Columns: SI.No, Title of the paper, Name of the Conference/Venue, International/National, Date, Authors, Indexed, Name of the Publisher, Website link).',
       options: {accept: '.csv'},
     }),
     // ── Tracking fields (auto-filled on import) ──────────────────────────────

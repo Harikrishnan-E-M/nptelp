@@ -62,24 +62,29 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   return (
     <div>
       {/* Top Header */}
-      <div className="d-flex align-items-center mb-4">
+      <div className="d-flex align-items-center mb-2">
         <button className="btn btn-outline-secondary me-3" onClick={onBack}>
           <i className="bi bi-arrow-left me-1"></i>Back
         </button>
         <h4 className="mb-0">Case Study — {yearLabel}</h4>
       </div>
 
-      {/* Controls bar */}
+      {/* Controls bar — Sort + Record count in one row */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1rem',
+          gap: '0.5rem',
+          marginBottom: '0.75rem',
         }}
       >
+        {/* Record count */}
+        <span className="section-meta-count">
+          {rows.length} record{rows.length !== 1 ? 's' : ''}
+        </span>
+
         {/* Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <label className="modal-sort-label" htmlFor="cs-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
@@ -96,13 +101,6 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
             <option value="course">Course</option>
           </select>
         </div>
-      </div>
-
-      {/* Record count */}
-      <div className="section-meta-bar" style={{ marginBottom: '1rem' }}>
-        <span className="section-meta-count">
-          {rows.length} record{rows.length !== 1 ? 's' : ''}
-        </span>
       </div>
 
       {error && <div className="alert alert-danger mt-3">{error}</div>}

@@ -542,6 +542,247 @@ function DeleteAndCleanupFacultyAction({id, type}) {
   }
 }
 
+// ==================== CSV PARSING — CASE STUDY ====================
+// Columns: S.No | Name | Course | Case study link
+function parseCaseStudyCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const name = stripInvisible(cols[1] || '')
+    if (!name) continue
+
+    rows.push({
+      sNo: parseInt(cols[0], 10) || null,
+      name,
+      course: stripInvisible(cols[2] || ''),
+      caseStudyLink: stripInvisible(cols[3] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — CASE STUDY ====================
+function PublishAndImportCaseStudyCsvAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const yearId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing document...'})
+
+    setTimeout(async () => {
+      try {
+        toast.push({status: 'info', title: 'Checking CSV file...'})
+
+        const yearDoc = await client.fetch(
+          `*[_type == "caseStudy" && _id == $yearId][0]{
+            _id,
+            csvAssetId,
+            dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {yearId}
+        )
+
+        if (!yearDoc?.csv?.asset?.url) {
+          toast.push({
+            status: 'success',
+            title: 'Published successfully',
+            description: 'No CSV file attached — nothing to import.',
+          })
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = yearDoc.csv.asset._id
+
+        if (yearDoc.csvAssetId === assetId && (yearDoc.dataCount || 0) > 0) {
+          toast.push({
+            status: 'success',
+            title: 'Published! CSV already up to date.',
+            description: `${yearDoc.dataCount} records already imported from this file.`,
+          })
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing Case Study CSV...'})
+        const response = await fetch(yearDoc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseCaseStudyCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "caseStudyData" && year._ref == $yearId]._id',
+          {yearId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((docId) => tx.delete(docId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} case study records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'caseStudyData',
+              year: {_type: 'reference', _ref: yearId, _weak: true},
+              sNo: row.sNo,
+              name: row.name,
+              course: row.course,
+              caseStudyLink: row.caseStudyLink || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client
+          .patch(yearId)
+          .set({
+            dataCount: rows.length,
+            csvAssetId: assetId,
+            csvImportedAt: new Date().toISOString(),
+          })
+          .commit()
+
+        toast.push({
+          status: 'success',
+          title: `✅ Published & imported ${rows.length} case study records!`,
+          description: 'Data is now live on the frontend.',
+        })
+      } catch (err) {
+        console.error('Case Study CSV import error:', err)
+        toast.push({
+          status: 'error',
+          title: 'Case Study CSV import failed (document is still published)',
+          description: err.message,
+        })
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, yearId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — CASE STUDY ====================
+function DeleteAndCleanupCaseStudyAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const yearId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+
+    if (!window.confirm('Are you sure? This will delete the Case Study year AND ALL associated data records. This cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up case study data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "caseStudyData" && year._ref == $yearId]._id',
+        {yearId}
+      )
+
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} case study records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((docId) => tx.delete(docId))
+          await tx.commit()
+        }
+      }
+
+      toast.push({status: 'info', title: 'Deleting Case Study year document...'})
+      deleteOp.execute()
+
+      toast.push({
+        status: 'success',
+        title: 'Successfully deleted Case Study year and all its data.',
+      })
+    } catch (err) {
+      console.error('Case Study delete cleanup error:', err)
+      toast.push({
+        status: 'error',
+        title: 'Failed to delete associated case study data',
+        description: err.message,
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, yearId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
 // ==================== PLUGIN ====================
 export const csvImporterPlugin = definePlugin({
   name: 'csv-importer',
@@ -560,6 +801,14 @@ export const csvImporterPlugin = definePlugin({
         return prev.map((action) => {
           if (action.action === 'publish') return PublishAndImportFacultyCsvAction
           if (action.action === 'delete') return DeleteAndCleanupFacultyAction
+          return action
+        })
+      }
+      // Case Study — custom publish (CSV import) + cleanup delete
+      if (context.schemaType === 'caseStudy') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCaseStudyCsvAction
+          if (action.action === 'delete') return DeleteAndCleanupCaseStudyAction
           return action
         })
       }

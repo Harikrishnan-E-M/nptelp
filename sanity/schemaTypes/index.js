@@ -14,6 +14,10 @@ import {journal} from './journal'
 import {journalData} from './journalData'
 import {scopus} from './scopus'
 import {scopusData} from './scopusData'
+import {freelancingInternship} from './freelancingInternship'
+import {freelancingInternshipData} from './freelancingInternshipData'
+import {placementInternship} from './placementInternship'
+import {placementInternshipData} from './placementInternshipData'
 
 export const schemaTypes = [
   academicYear,
@@ -32,4 +36,8 @@ export const schemaTypes = [
   journalData,
   scopus,
   scopusData,
+  freelancingInternship,
+  freelancingInternshipData,
+  placementInternship,
+  placementInternshipData,
 ]

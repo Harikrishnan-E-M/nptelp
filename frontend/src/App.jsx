@@ -11,6 +11,8 @@ import NonFormalDetail from './components/NonFormalDetail';
 import GenericYearList from './components/GenericYearList';
 import JournalDetail from './components/JournalDetail';
 import ScopusDetail from './components/ScopusDetail';
+import FreelancingInternshipDetail from './components/FreelancingInternshipDetail';
+import PlacementInternshipDetail from './components/PlacementInternshipDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -27,7 +29,12 @@ const MENU_STRUCTURE = [
       { id: 'scopus',  label: 'Scopus / Conference' },
     ],
   },
-  { id: '2.3', label: '2.3', children: [] },
+  {
+    id: '2.3', label: '2.3', children: [
+      { id: 'freelancing-internship', label: 'Freelancing Internship' },
+      { id: 'placement-internship',   label: 'Placement Internship' },
+    ],
+  },
   {
     id: '2.4', label: '2.4', children: [
       { id: 'case-study', label: 'Case Study' },
@@ -58,7 +65,9 @@ const VIEW_LABELS = {
   'ict':           'ICT Tools',
   'innovative':    'Innovative Teaching Activity',
   'journal':       'Journal',
-  'scopus':        'Scopus / Conference Papers',
+  'scopus':                    'Scopus / Conference Papers',
+  'freelancing-internship':    'Freelancing Internship',
+  'placement-internship':      'Placement Internship',
   'case-study':    'Case Study',
   'mini-project':  'Mini Project',
   'student-nptel': 'Student NPTEL Certification',
@@ -159,6 +168,12 @@ function App() {
   // ── Scopus state ──────────────────────────────────────────────────────────
   const [selectedScopusDoc, setSelectedScopusDoc] = useState(null);
 
+  // ── Freelancing Internship state ───────────────────────────────────────
+  const [selectedFreelancingDoc, setSelectedFreelancingDoc] = useState(null);
+
+  // ── Placement Internship state ─────────────────────────────────────────
+  const [selectedPlacementDoc, setSelectedPlacementDoc] = useState(null);
+
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -179,6 +194,8 @@ function App() {
     setSelectedMiniProjectDoc(null);
     setSelectedNonFormalDoc(null);
     setSelectedScopusDoc(null);
+    setSelectedFreelancingDoc(null);
+    setSelectedPlacementDoc(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -381,6 +398,40 @@ function App() {
                 docType="nonFormal"
                 iconClass="bi-award"
                 onSelect={(doc) => setSelectedNonFormalDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── Freelancing Internship ─── */}
+          {activeView === 'freelancing-internship' && (
+            selectedFreelancingDoc ? (
+              <FreelancingInternshipDetail
+                parentDocId={selectedFreelancingDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedFreelancingDoc.yearLabel}
+                onBack={() => setSelectedFreelancingDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="freelancingInternship"
+                iconClass="bi-laptop"
+                onSelect={(doc) => setSelectedFreelancingDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── Placement Internship ─── */}
+          {activeView === 'placement-internship' && (
+            selectedPlacementDoc ? (
+              <PlacementInternshipDetail
+                parentDocId={selectedPlacementDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedPlacementDoc.yearLabel}
+                onBack={() => setSelectedPlacementDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="placementInternship"
+                iconClass="bi-building"
+                onSelect={(doc) => setSelectedPlacementDoc(doc)}
               />
             )
           )}

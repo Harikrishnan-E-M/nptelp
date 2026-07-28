@@ -1,16 +1,16 @@
 import {defineField, defineType} from 'sanity'
 
-// ── Case Study document ───────────────────────────────────────────────────────
-export const caseStudy = defineType({
-  name: 'caseStudy',
+// ── Non Formal document ───────────────────────────────────────────────────────
+export const nonFormal = defineType({
+  name: 'nonFormal',
   type: 'document',
-  title: 'Case Study',
+  title: 'Non Formal',
   fields: [
     defineField({
       name: 'yearLabel',
       type: 'string',
       title: 'Year',
-      description: 'e.g., 2022-23',
+      description: 'e.g., 2024-28',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -22,7 +22,8 @@ export const caseStudy = defineType({
       name: 'csvFile',
       type: 'file',
       title: 'CSV File',
-      description: 'Upload the Case Study CSV file (columns: S.No, Name, Course, Case study link).',
+      description:
+        'Upload the Non Formal CSV (columns: Student Name, Roll Number, Section, Number of Non formal Course Completed, Course Name 1, Proof, Course Name 2, Proof2).',
       options: {accept: '.csv'},
     }),
     // ── Tracking fields (auto-filled on import) ──────────────────────────────
@@ -54,4 +55,3 @@ export const caseStudy = defineType({
     },
   },
 })
-

@@ -10,9 +10,9 @@ const sanitize = (str) => {
 };
 
 /**
- * CaseStudyDetail — fetches caseStudyData records for a specific year document.
+ * MiniProjectDetail — fetches miniProjectData records for a specific year document.
  */
-function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
+function MiniProjectDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,18 +27,18 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   const fetchRows = async () => {
     try {
       setLoading(true);
-      const query = `*[_type == "caseStudyData" && year._ref == $parentDocId] | order(sNo asc) {
+      const query = `*[_type == "miniProjectData" && year._ref == $parentDocId] | order(sNo asc) {
         _id,
         sNo,
         name,
         course,
-        caseStudyLink
+        miniProjectLink
       }`;
       const data = await client.fetch(query, { parentDocId });
       setRows(data);
       setError(null);
     } catch (err) {
-      setError('Failed to load case study data.');
+      setError('Failed to load mini project data.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading case study data...</div>;
+    return <div className="alert alert-info">Loading mini project data...</div>;
   }
 
   const displayedRows = getDisplayedRows();
@@ -66,7 +66,7 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
         <button className="btn btn-outline-secondary me-3" onClick={onBack}>
           <i className="bi bi-arrow-left me-1"></i>Back
         </button>
-        <h4 className="mb-0">Case Study — {yearLabel}</h4>
+        <h4 className="mb-0">Mini Project — {yearLabel}</h4>
       </div>
 
       {/* Controls bar */}
@@ -82,11 +82,11 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
       >
         {/* Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <label className="modal-sort-label" htmlFor="cs-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
+          <label className="modal-sort-label" htmlFor="mp-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
             <i className="bi bi-sort-alpha-down me-1"></i>Sort by:
           </label>
           <select
-            id="cs-sort"
+            id="mp-sort"
             className="modal-sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -119,7 +119,7 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
                 <th style={{ width: 60 }}>S.No</th>
                 <th className="text-start">Name</th>
                 <th className="text-start">Course</th>
-                <th>Case Study Link</th>
+                <th>Mini Project Link</th>
               </tr>
             </thead>
             <tbody>
@@ -131,9 +131,9 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
                   </td>
                   <td className="text-start">{sanitize(row.course) || '—'}</td>
                   <td>
-                    {sanitize(row.caseStudyLink) ? (
+                    {sanitize(row.miniProjectLink) ? (
                       <a
-                        href={sanitize(row.caseStudyLink)}
+                        href={sanitize(row.miniProjectLink)}
                         target="_blank"
                         rel="noreferrer"
                         className="cert-link-badge"
@@ -154,4 +154,4 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   );
 }
 
-export default CaseStudyDetail;
+export default MiniProjectDetail;

@@ -10,13 +10,14 @@ const sanitize = (str) => {
 };
 
 /**
- * CaseStudyDetail — fetches caseStudyData records for a specific year document.
+ * NonFormalDetail — fetches nonFormalData records for a specific year document.
+ * Columns: Student Name | Roll Number | Section | # Courses | Course 1 | Proof | Course 2 | Proof2
  */
-function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
+function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('sNo');
+  const [sortBy, setSortBy] = useState('name');
 
   useEffect(() => {
     if (parentDocId) {
@@ -27,37 +28,41 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   const fetchRows = async () => {
     try {
       setLoading(true);
-      const query = `*[_type == "caseStudyData" && year._ref == $parentDocId] | order(sNo asc) {
+      const query = `*[_type == "nonFormalData" && parent._ref == $parentDocId] | order(studentName asc) {
         _id,
-        sNo,
-        name,
-        course,
-        caseStudyLink
+        studentName,
+        rollNumber,
+        section,
+        nonFormalCourseCount,
+        courseName1,
+        proof1,
+        courseName2,
+        proof2
       }`;
       const data = await client.fetch(query, { parentDocId });
       setRows(data);
       setError(null);
     } catch (err) {
-      setError('Failed to load case study data.');
+      setError('Failed to load non formal data.');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getDisplayedRows = () => {
+  const getSortedRows = () => {
     const sorted = [...rows];
-    if (sortBy === 'sNo')    sorted.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
-    else if (sortBy === 'name')   sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    else if (sortBy === 'course') sorted.sort((a, b) => (a.course || '').localeCompare(b.course || ''));
+    if (sortBy === 'name')    sorted.sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
+    else if (sortBy === 'roll')    sorted.sort((a, b) => (a.rollNumber || '').localeCompare(b.rollNumber || ''));
+    else if (sortBy === 'section') sorted.sort((a, b) => (a.section || '').localeCompare(b.section || ''));
     return sorted;
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading case study data...</div>;
+    return <div className="alert alert-info">Loading non formal data...</div>;
   }
 
-  const displayedRows = getDisplayedRows();
+  const sortedRows = getSortedRows();
 
   return (
     <div>
@@ -66,7 +71,7 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
         <button className="btn btn-outline-secondary me-3" onClick={onBack}>
           <i className="bi bi-arrow-left me-1"></i>Back
         </button>
-        <h4 className="mb-0">Case Study — {yearLabel}</h4>
+        <h4 className="mb-0">Non Formal Education — {yearLabel}</h4>
       </div>
 
       {/* Controls bar */}
@@ -80,20 +85,19 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
           marginBottom: '1rem',
         }}
       >
-        {/* Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <label className="modal-sort-label" htmlFor="cs-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
+          <label className="modal-sort-label" htmlFor="nf-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
             <i className="bi bi-sort-alpha-down me-1"></i>Sort by:
           </label>
           <select
-            id="cs-sort"
+            id="nf-sort"
             className="modal-sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="sNo">S.No</option>
             <option value="name">Name</option>
-            <option value="course">Course</option>
+            <option value="roll">Roll Number</option>
+            <option value="section">Section</option>
           </select>
         </div>
       </div>
@@ -116,24 +120,49 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
           <table className="table table-bordered table-hover align-middle text-center">
             <thead className="table-dark">
               <tr>
-                <th style={{ width: 60 }}>S.No</th>
-                <th className="text-start">Name</th>
-                <th className="text-start">Course</th>
-                <th>Case Study Link</th>
+                <th className="text-start">Student Name</th>
+                <th>Roll Number</th>
+                <th>Section</th>
+                <th>No. of Courses</th>
+                <th className="text-start">Course Name 1</th>
+                <th>Proof</th>
+                <th className="text-start">Course Name 2</th>
+                <th>Proof2</th>
               </tr>
             </thead>
             <tbody>
-              {displayedRows.map((row, idx) => (
+              {sortedRows.map((row) => (
                 <tr key={row._id}>
-                  <td>{row.sNo ?? idx + 1}</td>
                   <td className="text-start">
-                    <strong>{sanitize(row.name) || '—'}</strong>
+                    <strong>{sanitize(row.studentName) || '—'}</strong>
                   </td>
-                  <td className="text-start">{sanitize(row.course) || '—'}</td>
+                  <td>{sanitize(row.rollNumber) || '—'}</td>
+                  <td>{sanitize(row.section) || '—'}</td>
                   <td>
-                    {sanitize(row.caseStudyLink) ? (
+                    {row.nonFormalCourseCount != null
+                      ? row.nonFormalCourseCount
+                      : <span className="text-muted">—</span>}
+                  </td>
+                  <td className="text-start">{sanitize(row.courseName1) || '—'}</td>
+                  <td>
+                    {sanitize(row.proof1) ? (
                       <a
-                        href={sanitize(row.caseStudyLink)}
+                        href={sanitize(row.proof1)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="cert-link-badge"
+                      >
+                        <i className="bi bi-box-arrow-up-right me-1"></i>View
+                      </a>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="text-start">{sanitize(row.courseName2) || '—'}</td>
+                  <td>
+                    {sanitize(row.proof2) ? (
+                      <a
+                        href={sanitize(row.proof2)}
                         target="_blank"
                         rel="noreferrer"
                         className="cert-link-badge"
@@ -154,4 +183,4 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   );
 }
 
-export default CaseStudyDetail;
+export default NonFormalDetail;

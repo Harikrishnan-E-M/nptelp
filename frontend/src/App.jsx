@@ -6,6 +6,10 @@ import SectionDetail from './components/SectionDetail';
 import FacultyCertYearList from './components/FacultyCertYearList';
 import FacultyCertDetail from './components/FacultyCertDetail';
 import CaseStudyDetail from './components/CaseStudyDetail';
+import MiniProjectDetail from './components/MiniProjectDetail';
+import NonFormalDetail from './components/NonFormalDetail';
+import GenericYearList from './components/GenericYearList';
+import JournalDetail from './components/JournalDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -16,20 +20,28 @@ const MENU_STRUCTURE = [
       { id: 'innovative', label: 'Innovative Teaching' },
     ],
   },
-  { id: '2.2', label: '2.2', children: [] },
+  {
+    id: '2.2', label: '2.2', children: [
+      { id: 'journal', label: 'Journal' },
+    ],
+  },
   { id: '2.3', label: '2.3', children: [] },
   {
     id: '2.4', label: '2.4', children: [
       { id: 'case-study', label: 'Case Study' },
     ],
   },
-  { id: '2.5', label: '2.5', children: [] },
+  {
+    id: '2.5', label: '2.5', children: [
+      { id: 'mini-project', label: 'Mini Project' },
+    ],
+  },
   {
     id: '2.6', label: '2.6', children: [
       {
         id: 'nptel', label: 'NPTEL', children: [
-          { id: 'student-nptel', label: 'Student NPTEL' },
-          { id: 'faculty-cert',  label: 'Faculty Certification' },
+          { id: 'student-nptel', label: 'Student NPTEL Certification' },
+          { id: 'faculty-cert',  label: 'Faculty NPTEL Certification' },
         ],
       },
       { id: 'non-formal', label: 'Non Formal' },
@@ -43,9 +55,11 @@ const MENU_STRUCTURE = [
 const VIEW_LABELS = {
   'ict':           'ICT Tools',
   'innovative':    'Innovative Teaching Activity',
+  'journal':       'Journal',
   'case-study':    'Case Study',
-  'student-nptel': 'Student NPTEL',
-  'faculty-cert':  'Faculty Certification',
+  'mini-project':  'Mini Project',
+  'student-nptel': 'Student NPTEL Certification',
+  'faculty-cert':  'Faculty NPTEL Certification',
   'non-formal':    'Non Formal Education',
 };
 
@@ -130,6 +144,15 @@ function App() {
   // ── Faculty Certification state ───────────────────────────────────────────
   const [selectedFacultyYear, setSelectedFacultyYear] = useState(null);
 
+  // ── Case Study state ──────────────────────────────────────────────────────
+  const [selectedCaseStudyDoc, setSelectedCaseStudyDoc] = useState(null);
+
+  // ── Mini Project state ────────────────────────────────────────────────────
+  const [selectedMiniProjectDoc, setSelectedMiniProjectDoc] = useState(null);
+
+  // ── Non Formal state ──────────────────────────────────────────────────────
+  const [selectedNonFormalDoc, setSelectedNonFormalDoc] = useState(null);
+
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -141,10 +164,14 @@ function App() {
   const switchView = (viewId) => {
     setActiveView(viewId);
     // Reset all sub-navigations
-    setShowStats(false);    setSelectedYear(null);
+    setSelectedYear(null);
+    setShowStats(false);
     setSelectedIctDoc(null);
     setSelectedInnoDoc(null);
     setSelectedFacultyYear(null);
+    setSelectedCaseStudyDoc(null);
+    setSelectedMiniProjectDoc(null);
+    setSelectedNonFormalDoc(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -278,18 +305,60 @@ function App() {
             </>
           )}
 
-          {/* ─── Case Study ─── */}
-          {activeView === 'case-study' && (
-            <CaseStudyDetail />
+          {/* ─── Journal ─── */}
+          {activeView === 'journal' && (
+            <JournalDetail />
           )}
 
-          {/* ─── Non-Formal placeholder ─── */}
+          {/* ─── Case Study ─── */}
+          {activeView === 'case-study' && (
+            selectedCaseStudyDoc ? (
+              <CaseStudyDetail 
+                parentDocId={selectedCaseStudyDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedCaseStudyDoc.yearLabel}
+                onBack={() => setSelectedCaseStudyDoc(null)}
+              />
+            ) : (
+              <GenericYearList 
+                docType="caseStudy"
+                iconClass="bi-briefcase"
+                onSelect={(doc) => setSelectedCaseStudyDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── Mini Project ─── */}
+          {activeView === 'mini-project' && (
+            selectedMiniProjectDoc ? (
+              <MiniProjectDetail 
+                parentDocId={selectedMiniProjectDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedMiniProjectDoc.yearLabel}
+                onBack={() => setSelectedMiniProjectDoc(null)}
+              />
+            ) : (
+              <GenericYearList 
+                docType="miniProject"
+                iconClass="bi-kanban"
+                onSelect={(doc) => setSelectedMiniProjectDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── Non-Formal ─── */}
           {activeView === 'non-formal' && (
-            <div className="coming-soon-banner">
-              <span className="coming-soon-icon">🚧</span>
-              <h2 className="coming-soon-title">Non Formal Education</h2>
-              <p className="coming-soon-text">Content coming soon.</p>
-            </div>
+            selectedNonFormalDoc ? (
+              <NonFormalDetail 
+                parentDocId={selectedNonFormalDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedNonFormalDoc.yearLabel}
+                onBack={() => setSelectedNonFormalDoc(null)}
+              />
+            ) : (
+              <GenericYearList 
+                docType="nonFormal"
+                iconClass="bi-award"
+                onSelect={(doc) => setSelectedNonFormalDoc(doc)}
+              />
+            )
           )}
 
         </main>

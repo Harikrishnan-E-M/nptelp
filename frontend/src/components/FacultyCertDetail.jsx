@@ -102,10 +102,10 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button className="btn btn-outline-secondary" onClick={onBack}>
-            <i className="bi bi-arrow-left me-2"></i>Back to Faculty Certification
+            <i className="bi bi-arrow-left me-2"></i>Back to Faculty NPTEL Certification
           </button>
           <h2 className="detail-top-title" style={{ margin: 0 }}>
-            <i className="bi bi-award me-2"></i>Faculty Certification — {meta?.yearLabel || yearLabel}
+            <i className="bi bi-award me-2"></i>Faculty NPTEL Certification — {meta?.yearLabel || yearLabel}
           </h2>
         </div>
 

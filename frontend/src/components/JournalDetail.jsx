@@ -10,35 +10,37 @@ const sanitize = (str) => {
 };
 
 /**
- * CaseStudyDetail — fetches caseStudyData records for a specific year document.
+ * JournalDetail — fetches ALL journalData records and displays them in a single table.
+ * No year selection is needed for this section.
  */
-function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
+function JournalDetail() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('sNo');
 
   useEffect(() => {
-    if (parentDocId) {
-      fetchRows();
-    }
-  }, [parentDocId]);
+    fetchRows();
+  }, []);
 
   const fetchRows = async () => {
     try {
       setLoading(true);
-      const query = `*[_type == "caseStudyData" && year._ref == $parentDocId] | order(sNo asc) {
+      const query = `*[_type == "journalData"] | order(sNo asc) {
         _id,
         sNo,
-        name,
-        course,
-        caseStudyLink
+        studentName,
+        paperTitle,
+        journalDetails,
+        scopusSci,
+        webLink,
+        year
       }`;
-      const data = await client.fetch(query, { parentDocId });
+      const data = await client.fetch(query);
       setRows(data);
       setError(null);
     } catch (err) {
-      setError('Failed to load case study data.');
+      setError('Failed to load journal data.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -47,28 +49,20 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
 
   const getDisplayedRows = () => {
     const sorted = [...rows];
-    if (sortBy === 'sNo')    sorted.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
-    else if (sortBy === 'name')   sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    else if (sortBy === 'course') sorted.sort((a, b) => (a.course || '').localeCompare(b.course || ''));
+    if (sortBy === 'sNo') sorted.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
+    else if (sortBy === 'name') sorted.sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
+    else if (sortBy === 'year') sorted.sort((a, b) => (a.year || '').localeCompare(b.year || ''));
     return sorted;
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading case study data...</div>;
+    return <div className="alert alert-info">Loading journal data...</div>;
   }
 
   const displayedRows = getDisplayedRows();
 
   return (
     <div>
-      {/* Top Header */}
-      <div className="d-flex align-items-center mb-4">
-        <button className="btn btn-outline-secondary me-3" onClick={onBack}>
-          <i className="bi bi-arrow-left me-1"></i>Back
-        </button>
-        <h4 className="mb-0">Case Study — {yearLabel}</h4>
-      </div>
-
       {/* Controls bar */}
       <div
         style={{
@@ -82,18 +76,18 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
       >
         {/* Sort */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <label className="modal-sort-label" htmlFor="cs-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
+          <label className="modal-sort-label" htmlFor="journal-sort" style={{ margin: 0, whiteSpace: 'nowrap' }}>
             <i className="bi bi-sort-alpha-down me-1"></i>Sort by:
           </label>
           <select
-            id="cs-sort"
+            id="journal-sort"
             className="modal-sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
             <option value="sNo">S.No</option>
-            <option value="name">Name</option>
-            <option value="course">Course</option>
+            <option value="name">Student Name</option>
+            <option value="year">Year</option>
           </select>
         </div>
       </div>
@@ -117,9 +111,12 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
             <thead className="table-dark">
               <tr>
                 <th style={{ width: 60 }}>S.No</th>
-                <th className="text-start">Name</th>
-                <th className="text-start">Course</th>
-                <th>Case Study Link</th>
+                <th className="text-start">Name of the student</th>
+                <th className="text-start">Title of the paper</th>
+                <th className="text-start">Journal/Conference details</th>
+                <th>Scopus/SCI</th>
+                <th>Web link of the paper</th>
+                <th>Year</th>
               </tr>
             </thead>
             <tbody>
@@ -127,23 +124,32 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
                 <tr key={row._id}>
                   <td>{row.sNo ?? idx + 1}</td>
                   <td className="text-start">
-                    <strong>{sanitize(row.name) || '—'}</strong>
+                    <strong>{sanitize(row.studentName) || '—'}</strong>
                   </td>
-                  <td className="text-start">{sanitize(row.course) || '—'}</td>
+                  <td className="text-start">{sanitize(row.paperTitle) || '—'}</td>
+                  <td className="text-start">{sanitize(row.journalDetails) || '—'}</td>
                   <td>
-                    {sanitize(row.caseStudyLink) ? (
+                    {sanitize(row.scopusSci) ? (
+                      <span className="badge bg-secondary">{sanitize(row.scopusSci)}</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {sanitize(row.webLink) ? (
                       <a
-                        href={sanitize(row.caseStudyLink)}
+                        href={sanitize(row.webLink)}
                         target="_blank"
                         rel="noreferrer"
                         className="cert-link-badge"
                       >
-                        <i className="bi bi-box-arrow-up-right me-1"></i>View
+                        <i className="bi bi-box-arrow-up-right me-1"></i>Link
                       </a>
                     ) : (
                       <span className="text-muted">—</span>
                     )}
                   </td>
+                  <td>{sanitize(row.year) || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -154,4 +160,4 @@ function CaseStudyDetail({ parentDocId, onBack, yearLabel }) {
   );
 }
 
-export default CaseStudyDetail;
+export default JournalDetail;

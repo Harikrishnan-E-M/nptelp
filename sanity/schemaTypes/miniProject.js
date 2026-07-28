@@ -1,10 +1,10 @@
 import {defineField, defineType} from 'sanity'
 
-// ── Case Study document ───────────────────────────────────────────────────────
-export const caseStudy = defineType({
-  name: 'caseStudy',
+// ── Mini Project document ─────────────────────────────────────────────────────
+export const miniProject = defineType({
+  name: 'miniProject',
   type: 'document',
-  title: 'Case Study',
+  title: 'Mini Project',
   fields: [
     defineField({
       name: 'yearLabel',
@@ -22,7 +22,7 @@ export const caseStudy = defineType({
       name: 'csvFile',
       type: 'file',
       title: 'CSV File',
-      description: 'Upload the Case Study CSV file (columns: S.No, Name, Course, Case study link).',
+      description: 'Upload the Mini Project CSV file (columns: S.No, Name, Course, Mini Project link).',
       options: {accept: '.csv'},
     }),
     // ── Tracking fields (auto-filled on import) ──────────────────────────────
@@ -54,4 +54,3 @@ export const caseStudy = defineType({
     },
   },
 })
-

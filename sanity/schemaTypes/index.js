@@ -1,3 +1,5 @@
+import {nbaIct} from './nbaIct'
+import {nbaIctData} from './nbaIctData'
 import {academicYear} from './academicYear'
 import {nptelData} from './nptelData'
 import {ictTools} from './ictTools'
@@ -20,6 +22,8 @@ import {placementInternship} from './placementInternship'
 import {placementInternshipData} from './placementInternshipData'
 
 export const schemaTypes = [
+  nbaIct,
+  nbaIctData,
   academicYear,
   nptelData,
   ictTools,

@@ -10,6 +10,7 @@ import MiniProjectDetail from './components/MiniProjectDetail';
 import NonFormalDetail from './components/NonFormalDetail';
 import GenericYearList from './components/GenericYearList';
 import JournalDetail from './components/JournalDetail';
+import NbaIctDetail from './components/NbaIctDetail';
 import ScopusDetail from './components/ScopusDetail';
 import FreelancingInternshipDetail from './components/FreelancingInternshipDetail';
 import PlacementInternshipDetail from './components/PlacementInternshipDetail';
@@ -270,18 +271,7 @@ function App() {
 
           {/* ─── ICT Tools ─── */}
           {activeView === 'ict' && (
-            <>
-              {!selectedIctDoc ? (
-                <SemesterYearList docType="ictTools" onSelect={setSelectedIctDoc} />
-              ) : (
-                <SectionDetail
-                  docId={selectedIctDoc._id}
-                  docType="ictTools"
-                  onBack={() => setSelectedIctDoc(null)}
-                  menuLabel="ICT Tools"
-                />
-              )}
-            </>
+            <NbaIctDetail />
           )}
 
           {/* ─── Innovative Teaching ─── */}

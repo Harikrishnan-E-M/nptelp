@@ -20,7 +20,7 @@ function YearsList({ onYearSelect }) {
         endYear,
         description,
         _createdAt,
-        dataCount
+        "totalStudents": count(*[_type == "nptelData" && references(^._id)])
       }`;
       const data = await client.fetch(query);
       setYears(data);
@@ -49,17 +49,25 @@ function YearsList({ onYearSelect }) {
         <div className="row g-3">
           {years.map((year) => (
             <div key={year._id} className="col-md-6 col-lg-4">
-              <div className="card year-card">
-                <div className="card-body">
-                  <h5 className="card-title">
-                    <i className="bi bi-calendar me-2"></i>{year.yearLabel}
-                  </h5>
-                  <p className="card-text text-muted">
-                    {year.startYear} - {year.endYear}
-                  </p>
+              <div className="card year-card h-100">
+                <div className="card-body d-flex flex-column">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <i className="bi bi-calendar me-1 fs-5"></i>
+                    <h5 className="card-title mb-0">{year.yearLabel}</h5>
+                  </div>
                   {year.description && (
-                    <p className="card-text small text-secondary">{year.description}</p>
+                    <p className="card-text small text-secondary mb-2">{year.description}</p>
                   )}
+
+                  <div className="d-flex gap-3 mb-3 mt-auto">
+                    <div className="faculty-stat-pill">
+                      <span className="faculty-stat-label">Total Students</span>
+                      <span className="faculty-stat-value">
+                        {year.totalStudents != null ? year.totalStudents : '0'}
+                      </span>
+                    </div>
+                  </div>
+
                   <button
                     className="btn btn-primary btn-sm w-100"
                     onClick={() => onYearSelect(year)}

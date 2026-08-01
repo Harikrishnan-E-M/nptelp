@@ -14,6 +14,7 @@ import NbaIctDetail from './components/NbaIctDetail';
 import ScopusDetail from './components/ScopusDetail';
 import FreelancingInternshipDetail from './components/FreelancingInternshipDetail';
 import PlacementInternshipDetail from './components/PlacementInternshipDetail';
+import InnovativeTeachingView from './components/InnovativeTeachingView';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ function App() {
   const [selectedIctDoc, setSelectedIctDoc] = useState(null);
 
   // ── Innovative Teaching state ─────────────────────────────────────────────
-  const [selectedInnoDoc, setSelectedInnoDoc] = useState(null);
+  // (handled internally by InnovativeTeachingView)
 
   // ── Faculty Certification state ───────────────────────────────────────────
   const [selectedFacultyYear, setSelectedFacultyYear] = useState(null);
@@ -189,7 +190,6 @@ function App() {
     setSelectedYear(null);
     setShowStats(false);
     setSelectedIctDoc(null);
-    setSelectedInnoDoc(null);
     setSelectedFacultyYear(null);
     setSelectedCaseStudyDoc(null);
     setSelectedMiniProjectDoc(null);
@@ -276,18 +276,7 @@ function App() {
 
           {/* ─── Innovative Teaching ─── */}
           {activeView === 'innovative' && (
-            <>
-              {!selectedInnoDoc ? (
-                <SemesterYearList docType="innovativeTeaching" onSelect={setSelectedInnoDoc} />
-              ) : (
-                <SectionDetail
-                  docId={selectedInnoDoc._id}
-                  docType="innovativeTeaching"
-                  onBack={() => setSelectedInnoDoc(null)}
-                  menuLabel="Innovative Teaching Activity"
-                />
-              )}
-            </>
+            <InnovativeTeachingView menuLabel="Innovative Teaching Activity" />
           )}
 
           {/* ─── Student NPTEL ─── */}

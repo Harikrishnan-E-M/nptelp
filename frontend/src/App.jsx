@@ -6,6 +6,7 @@ import SectionDetail from './components/SectionDetail';
 import FacultyCertYearList from './components/FacultyCertYearList';
 import FacultyCertDetail from './components/FacultyCertDetail';
 import CaseStudyDetail from './components/CaseStudyDetail';
+import SeminarDetail from './components/SeminarDetail';
 import MiniProjectDetail from './components/MiniProjectDetail';
 import NonFormalDetail from './components/NonFormalDetail';
 import GenericYearList from './components/GenericYearList';
@@ -40,6 +41,7 @@ const MENU_STRUCTURE = [
   {
     id: '2.4', label: '2.4', children: [
       { id: 'case-study', label: 'Case Study' },
+      { id: 'seminar',    label: 'Seminar' },
     ],
   },
   {
@@ -71,6 +73,7 @@ const VIEW_LABELS = {
   'freelancing-internship':    'Freelancing Internship',
   'placement-internship':      'Placement Internship',
   'case-study':    'Case Study',
+  'seminar':        'Seminar',
   'mini-project':  'Mini Project',
   'student-nptel': 'Student NPTEL Certification',
   'faculty-cert':  'Faculty NPTEL Certification',
@@ -176,6 +179,9 @@ function App() {
   // ── Placement Internship state ─────────────────────────────────────────
   const [selectedPlacementDoc, setSelectedPlacementDoc] = useState(null);
 
+  // ── Seminar state ─────────────────────────────────────────────────────
+  const [selectedSeminarDoc, setSelectedSeminarDoc] = useState(null);
+
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -197,6 +203,7 @@ function App() {
     setSelectedScopusDoc(null);
     setSelectedFreelancingDoc(null);
     setSelectedPlacementDoc(null);
+    setSelectedSeminarDoc(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -411,6 +418,23 @@ function App() {
                 docType="placementInternship"
                 iconClass="bi-building"
                 onSelect={(doc) => setSelectedPlacementDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── Seminar ─── */}
+          {activeView === 'seminar' && (
+            selectedSeminarDoc ? (
+              <SeminarDetail
+                parentDocId={selectedSeminarDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedSeminarDoc.yearLabel}
+                onBack={() => setSelectedSeminarDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="seminar"
+                iconClass="bi-mic"
+                onSelect={(doc) => setSelectedSeminarDoc(doc)}
               />
             )
           )}

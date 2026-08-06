@@ -226,9 +226,12 @@ function App() {
               className="header-logo"
             />
           </a>
+          <div className="header-divider" />
           <div className="header-title-block">
             <h1 className="header-title">COMPUTER SCIENCE AND ENGINEERING</h1>
+            <p className="header-subtitle">Kongu Engineering College · Perundurai</p>
           </div>
+
         </div>
       </header>
 
@@ -238,7 +241,7 @@ function App() {
         {/* ── Left Sidebar ─────────────────────────────────────────────── */}
         <aside className="sidebar">
           <div className="sidebar-inner">
-            <p className="sidebar-section-label">MENU</p>
+            <p className="sidebar-section-label">NAVIGATION</p>
             <nav className="sidebar-nav">
               {MENU_STRUCTURE.map(item => (
                 item.children.length === 0 ? (
@@ -278,7 +281,9 @@ function App() {
           {/* No view selected */}
           {!activeView && (
             <div className="welcome-banner">
-              <p className="welcome-text">Select a menu item on the left to get started.</p>
+              <i className="bi bi-mortarboard" style={{ fontSize: '2.5rem', color: '#1E3A8A', marginBottom: '0.75rem', display: 'block' }}></i>
+              <p className="welcome-text" style={{ color: '#374151', fontWeight: 600, fontSize: '1rem', marginBottom: '0.4rem' }}>Department of Computer Science and Engineering</p>
+              <p className="welcome-text">Select a section from the navigation panel to view accreditation data.</p>
             </div>
           )}
 

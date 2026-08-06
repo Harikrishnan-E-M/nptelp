@@ -24,6 +24,8 @@ import {seminar} from './seminar'
 import {seminarData} from './seminarData'
 import {industrialInvolvement} from './industrialInvolvement'
 import {industrialInvolvementData} from './industrialInvolvementData'
+import {guestLecture} from './guestLecture'
+import {guestLectureData} from './guestLectureData'
 
 export const schemaTypes = [
   nbaIct,
@@ -52,4 +54,6 @@ export const schemaTypes = [
   seminarData,
   industrialInvolvement,
   industrialInvolvementData,
+  guestLecture,
+  guestLectureData,
 ]

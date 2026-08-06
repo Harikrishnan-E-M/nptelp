@@ -17,6 +17,7 @@ import FreelancingInternshipDetail from './components/FreelancingInternshipDetai
 import PlacementInternshipDetail from './components/PlacementInternshipDetail';
 import InnovativeTeachingView from './components/InnovativeTeachingView';
 import IndustrialInvolvementDetail from './components/IndustrialInvolvementDetail';
+import GuestLectureDetail from './components/GuestLectureDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ const MENU_STRUCTURE = [
   {
     id: '2.8', label: '2.8', children: [
       { id: 'industrial-involvement', label: 'A) Industrial involvement' },
+      { id: 'guest-lecture', label: 'B) Guest Lecture' },
     ],
   },
 ];
@@ -84,6 +86,7 @@ const VIEW_LABELS = {
   'faculty-cert':  'Faculty NPTEL Certification',
   'non-formal':    'Non Formal Education',
   'industrial-involvement': 'Industrial involvement in partial delivery of regular courses',
+  'guest-lecture': 'Guest Lecture',
 };
 
 // ── Recursive sidebar menu item ───────────────────────────────────────────────
@@ -453,6 +456,11 @@ function App() {
           {/* ─── Industrial Involvement ─── */}
           {activeView === 'industrial-involvement' && (
             <IndustrialInvolvementDetail />
+          )}
+
+          {/* ─── Guest Lecture ─── */}
+          {activeView === 'guest-lecture' && (
+            <GuestLectureDetail />
           )}
 
         </main>

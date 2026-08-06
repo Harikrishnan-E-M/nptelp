@@ -22,6 +22,8 @@ import {placementInternship} from './placementInternship'
 import {placementInternshipData} from './placementInternshipData'
 import {seminar} from './seminar'
 import {seminarData} from './seminarData'
+import {industrialInvolvement} from './industrialInvolvement'
+import {industrialInvolvementData} from './industrialInvolvementData'
 
 export const schemaTypes = [
   nbaIct,
@@ -48,4 +50,6 @@ export const schemaTypes = [
   placementInternshipData,
   seminar,
   seminarData,
+  industrialInvolvement,
+  industrialInvolvementData,
 ]

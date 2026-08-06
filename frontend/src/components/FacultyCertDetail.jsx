@@ -20,7 +20,7 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('none');
 
   useEffect(() => {
     fetchRows();
@@ -61,6 +61,7 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
 
   const getSortedRows = () => {
     const sorted = [...rows];
+    if (sortBy === 'none') return sorted;
     if (sortBy === 'name') {
       sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     } else if (sortBy === 'course') {
@@ -120,6 +121,7 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
+            <option value="none">No Sort</option>
             <option value="name">Name</option>
             <option value="course">Course</option>
             <option value="mark">Mark</option>

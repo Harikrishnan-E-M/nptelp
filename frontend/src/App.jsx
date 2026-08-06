@@ -16,6 +16,7 @@ import ScopusDetail from './components/ScopusDetail';
 import FreelancingInternshipDetail from './components/FreelancingInternshipDetail';
 import PlacementInternshipDetail from './components/PlacementInternshipDetail';
 import InnovativeTeachingView from './components/InnovativeTeachingView';
+import IndustrialInvolvementDetail from './components/IndustrialInvolvementDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -61,7 +62,11 @@ const MENU_STRUCTURE = [
     ],
   },
   { id: '2.7', label: '2.7', children: [] },
-  { id: '2.8', label: '2.8', children: [] },
+  {
+    id: '2.8', label: '2.8', children: [
+      { id: 'industrial-involvement', label: 'A) Industrial involvement' },
+    ],
+  },
 ];
 
 // ── View labels ───────────────────────────────────────────────────────────────
@@ -78,6 +83,7 @@ const VIEW_LABELS = {
   'student-nptel': 'Student NPTEL Certification',
   'faculty-cert':  'Faculty NPTEL Certification',
   'non-formal':    'Non Formal Education',
+  'industrial-involvement': 'Industrial involvement in partial delivery of regular courses',
 };
 
 // ── Recursive sidebar menu item ───────────────────────────────────────────────
@@ -437,6 +443,11 @@ function App() {
                 onSelect={(doc) => setSelectedSeminarDoc(doc)}
               />
             )
+          )}
+
+          {/* ─── Industrial Involvement ─── */}
+          {activeView === 'industrial-involvement' && (
+            <IndustrialInvolvementDetail />
           )}
 
         </main>

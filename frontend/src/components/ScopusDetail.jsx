@@ -17,7 +17,7 @@ function ScopusDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('sNo');
+  const [sortBy, setSortBy] = useState('none');
 
   useEffect(() => {
     if (parentDocId) fetchRows();
@@ -51,6 +51,7 @@ function ScopusDetail({ parentDocId, onBack, yearLabel }) {
 
   const getSortedRows = () => {
     const sorted = [...rows];
+    if (sortBy === 'none') return sorted;
     if (sortBy === 'sNo')    sorted.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
     else if (sortBy === 'title')   sorted.sort((a, b) => (a.paperTitle || '').localeCompare(b.paperTitle || ''));
     else if (sortBy === 'date')    sorted.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -99,6 +100,7 @@ function ScopusDetail({ parentDocId, onBack, yearLabel }) {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
+            <option value="none">No Sort</option>
             <option value="sNo">SI.No</option>
             <option value="title">Title</option>
             <option value="date">Date</option>

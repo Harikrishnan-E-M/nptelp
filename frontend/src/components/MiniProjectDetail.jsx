@@ -16,7 +16,7 @@ function MiniProjectDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('sNo');
+  const [sortBy, setSortBy] = useState('none');
 
   useEffect(() => {
     if (parentDocId) {
@@ -47,6 +47,7 @@ function MiniProjectDetail({ parentDocId, onBack, yearLabel }) {
 
   const getDisplayedRows = () => {
     const sorted = [...rows];
+    if (sortBy === 'none') return sorted;
     if (sortBy === 'sNo')    sorted.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
     else if (sortBy === 'name')   sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     else if (sortBy === 'course') sorted.sort((a, b) => (a.course || '').localeCompare(b.course || ''));
@@ -91,6 +92,7 @@ function MiniProjectDetail({ parentDocId, onBack, yearLabel }) {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
+            <option value="none">No Sort</option>
             <option value="sNo">S.No</option>
             <option value="name">Name</option>
             <option value="course">Course</option>

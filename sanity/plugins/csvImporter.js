@@ -1600,6 +1600,14 @@ export const csvImporterPlugin = definePlugin({
           return action
         })
       }
+      // Industrial Involvement — custom publish (CSV import) + cleanup delete
+      if (context.schemaType === 'industrialInvolvement') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportIndustrialInvolvementCsvAction
+          if (action.action === 'delete') return DeleteAndCleanupIndustrialInvolvementAction
+          return action
+        })
+      }
       return prev
     },
   },
@@ -2858,3 +2866,247 @@ function DeleteAndCleanupPlacementAction({id, type}) {
   }
 }
 
+// ==================== CSV PARSING — INDUSTRIAL INVOLVEMENT ====================
+// Columns: S.No | Date | Industry Expert | Designation | Course Name | Link
+function parseIndustrialInvolvementCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const industryExpert = stripInvisible(cols[2] || '')
+    if (!industryExpert) continue
+
+    rows.push({
+      sNo:           parseInt(cols[0], 10) || null,
+      date:          stripInvisible(cols[1] || ''),
+      industryExpert,
+      designation:   stripInvisible(cols[3] || ''),
+      courseName:    stripInvisible(cols[4] || ''),
+      driveLink:     stripInvisible(cols[5] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — INDUSTRIAL INVOLVEMENT ====================
+function PublishAndImportIndustrialInvolvementCsvAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing document...'})
+
+    setTimeout(async () => {
+      try {
+        toast.push({status: 'info', title: 'Checking CSV file...'})
+
+        const doc = await client.fetch(
+          `*[_type == "industrialInvolvement" && _id == $docId][0]{
+            _id,
+            csvAssetId,
+            dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({
+            status: 'success',
+            title: 'Published successfully',
+            description: 'No CSV file attached — nothing to import.',
+          })
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({
+            status: 'success',
+            title: 'Published! CSV already up to date.',
+            description: `${doc.dataCount} records already imported from this file.`,
+          })
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing Industrial Involvement CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseIndustrialInvolvementCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "industrialInvolvementData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} industrial involvement records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'industrialInvolvementData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:           row.sNo,
+              date:          row.date || undefined,
+              industryExpert: row.industryExpert,
+              designation:   row.designation || undefined,
+              courseName:    row.courseName || undefined,
+              driveLink:     row.driveLink || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client
+          .patch(docId)
+          .set({
+            dataCount: rows.length,
+            csvAssetId: assetId,
+            csvImportedAt: new Date().toISOString(),
+          })
+          .commit()
+
+        toast.push({
+          status: 'success',
+          title: `✅ Published & imported ${rows.length} records!`,
+          description: 'Data is now live on the frontend.',
+        })
+      } catch (err) {
+        console.error('Industrial Involvement CSV import error:', err)
+        toast.push({
+          status: 'error',
+          title: 'Industrial Involvement CSV import failed (document is still published)',
+          description: err.message,
+        })
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — INDUSTRIAL INVOLVEMENT ====================
+function DeleteAndCleanupIndustrialInvolvementAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+
+    if (!window.confirm('Are you sure? This will delete the Industrial Involvement document AND ALL associated records. This cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up industrial involvement data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "industrialInvolvementData" && parent._ref == $docId]._id',
+        {docId}
+      )
+
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+
+      toast.push({status: 'info', title: 'Deleting Industrial Involvement document...'})
+      deleteOp.execute()
+
+      toast.push({
+        status: 'success',
+        title: 'Successfully deleted Industrial Involvement document and all its data.',
+      })
+    } catch (err) {
+      console.error('Industrial Involvement delete cleanup error:', err)
+      toast.push({
+        status: 'error',
+        title: 'Failed to delete associated industrial involvement data',
+        description: err.message,
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}

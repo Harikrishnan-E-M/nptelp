@@ -18,7 +18,7 @@ function FreelancingInternshipDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('none');
 
   useEffect(() => {
     if (parentDocId) fetchRows();
@@ -54,6 +54,7 @@ function FreelancingInternshipDetail({ parentDocId, onBack, yearLabel }) {
 
   const getSortedRows = () => {
     const sorted = [...rows];
+    if (sortBy === 'none') return sorted;
     if (sortBy === 'name')    sorted.sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''));
     else if (sortBy === 'sNo')     sorted.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
     else if (sortBy === 'roll')    sorted.sort((a, b) => (a.rollNo || '').localeCompare(b.rollNo || ''));
@@ -103,6 +104,7 @@ function FreelancingInternshipDetail({ parentDocId, onBack, yearLabel }) {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
+            <option value="none">No Sort</option>
             <option value="name">Name</option>
             <option value="sNo">S.No</option>
             <option value="roll">Roll No.</option>

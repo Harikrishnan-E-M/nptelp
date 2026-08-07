@@ -6,7 +6,6 @@ import {useToast} from '@sanity/ui'
 // ==================== CSV PARSING — NPTEL (Student) ====================
 function parseCsvText(csvText) {
   const lines = csvText.split(/\r?\n/)
-  lines.shift()
   const rows = []
 
   for (const line of lines) {

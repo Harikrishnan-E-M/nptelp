@@ -11,7 +11,6 @@ app.use(express.json());
 // ==================== CSV PARSING (Matches original UI parser) ====================
 function parseCsvText(csvText) {
   const lines = csvText.split(/\r?\n/);
-  lines.shift();
   const rows = [];
 
   for (const line of lines) {

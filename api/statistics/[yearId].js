@@ -12,7 +12,6 @@ const client = createClient({
 // ==================== CSV PARSING ====================
 function parseCsvText(csvText) {
   const lines = csvText.split(/\r?\n/);
-  lines.shift(); // Remove header row
   const rows = [];
 
   for (const line of lines) {

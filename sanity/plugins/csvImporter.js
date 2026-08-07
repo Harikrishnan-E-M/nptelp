@@ -1622,8 +1622,8 @@ export const csvImporterPlugin = definePlugin({
 })
 
 // ==================== CSV PARSING — NON FORMAL ====================
-// Columns: Student Name | Roll Number | Section | Number of Non formal Course Completed
-//          | Course Name 1 | Course Name 2
+// Columns: s.no | Student Name | Roll Number | Section | Number of Non formal Course Completed
+//          | Course Name 1 | Proof 1 | Course Name 2 | Proof 2
 function parseNonFormalCsvText(csvText) {
   const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
   const lines = cleanText.split(/\r?\n/)
@@ -1650,16 +1650,19 @@ function parseNonFormalCsvText(csvText) {
     }
     cols.push(stripInvisible(cur))
 
-    const studentName = stripInvisible(cols[0] || '')
+    // col[0] = s.no (skip), col[1] = Student Name
+    const studentName = stripInvisible(cols[1] || '')
     if (!studentName) continue
 
     rows.push({
       studentName,
-      rollNumber:          stripInvisible(cols[1] || ''),
-      section:             stripInvisible(cols[2] || ''),
-      nonFormalCourseCount: parseInt(cols[3], 10) || null,
-      courseName1:         stripInvisible(cols[4] || ''),
-      courseName2:         stripInvisible(cols[5] || ''),
+      rollNumber:           stripInvisible(cols[2] || ''),
+      section:              stripInvisible(cols[3] || ''),
+      nonFormalCourseCount: parseInt(cols[4], 10) || null,
+      courseName1:          stripInvisible(cols[5] || ''),
+      proof1:               stripInvisible(cols[6] || ''),
+      courseName2:          stripInvisible(cols[7] || ''),
+      proof2:               stripInvisible(cols[8] || ''),
     })
   }
 
@@ -1761,7 +1764,9 @@ function PublishAndImportNonFormalCsvAction({id, type}) {
               section:              row.section || undefined,
               nonFormalCourseCount: row.nonFormalCourseCount,
               courseName1:          row.courseName1 || undefined,
+              proof1:               row.proof1 || undefined,
               courseName2:          row.courseName2 || undefined,
+              proof2:               row.proof2 || undefined,
             })
           })
           await tx.commit()

@@ -11,7 +11,7 @@ const sanitize = (str) => {
 
 /**
  * NonFormalDetail — fetches nonFormalData records for a specific year document.
- * Columns: Student Name | Roll Number | Section | # Courses | Course 1 | Course 2
+ * Columns: Student Name | Roll Number | Section | # Courses | Course 1 | Proof 1 | Course 2 | Proof 2
  */
 function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
   const [rows, setRows] = useState([]);
@@ -35,7 +35,9 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
         section,
         nonFormalCourseCount,
         courseName1,
-        courseName2
+        proof1,
+        courseName2,
+        proof2
       }`;
       const data = await client.fetch(query, { parentDocId });
       setRows(data);
@@ -124,7 +126,9 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
                 <th>Section</th>
                 <th>No. of Courses</th>
                 <th className="text-start">Course Name 1</th>
+                <th>Proof 1</th>
                 <th className="text-start">Course Name 2</th>
+                <th>Proof 2</th>
               </tr>
             </thead>
             <tbody>
@@ -141,7 +145,21 @@ function NonFormalDetail({ parentDocId, onBack, yearLabel }) {
                       : <span className="text-muted">—</span>}
                   </td>
                   <td className="text-start">{sanitize(row.courseName1) || '—'}</td>
+                  <td>
+                    {row.proof1 ? (
+                      <a href={row.proof1} target="_blank" rel="noopener noreferrer" title="View Proof 1">
+                        <i className="bi bi-box-arrow-up-right"></i>
+                      </a>
+                    ) : '—'}
+                  </td>
                   <td className="text-start">{sanitize(row.courseName2) || '—'}</td>
+                  <td>
+                    {row.proof2 ? (
+                      <a href={row.proof2} target="_blank" rel="noopener noreferrer" title="View Proof 2">
+                        <i className="bi bi-box-arrow-up-right"></i>
+                      </a>
+                    ) : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -23,7 +23,7 @@ export const nonFormal = defineType({
       type: 'file',
       title: 'CSV File',
       description:
-        'Upload the Non Formal CSV (columns: Student Name, Roll Number, Section, Number of Non formal Course Completed, Course Name 1, Course Name 2).',
+        'Upload the Non Formal CSV (columns: s.no, Student Name, Roll Number, Section, Number of Non formal Course Completed, Course Name 1, Proof 1, Course Name 2, Proof 2).',
       options: {accept: '.csv'},
     }),
     // ── Tracking fields (auto-filled on import) ──────────────────────────────

@@ -18,6 +18,7 @@ import PlacementInternshipDetail from './components/PlacementInternshipDetail';
 import InnovativeTeachingView from './components/InnovativeTeachingView';
 import IndustrialInvolvementDetail from './components/IndustrialInvolvementDetail';
 import GuestLectureDetail from './components/GuestLectureDetail';
+import ComplexEngineeringActivities from './components/ComplexEngineeringActivities';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -62,7 +63,12 @@ const MENU_STRUCTURE = [
       { id: 'non-formal', label: 'Non Formal' },
     ],
   },
-  { id: '2.7', label: '2.7', children: [] },
+  {
+    id: '2.7', label: '2.7', children: [
+      { id: 'cea-co-curricular',    label: 'Co-Curricular with SDG Mapping' },
+      { id: 'cea-extra-curricular', label: 'Extra-Curricular Programs' },
+    ],
+  },
   {
     id: '2.8', label: '2.8', children: [
       { id: 'industrial-involvement', label: 'A) Industrial involvement' },
@@ -85,6 +91,8 @@ const VIEW_LABELS = {
   'student-nptel': 'Student NPTEL Certification',
   'faculty-cert':  'Faculty NPTEL Certification',
   'non-formal':    'Non Formal Education',
+  'cea-co-curricular':    'Co-Curricular Activities with SDG Mapping',
+  'cea-extra-curricular': 'Extra-Curricular Programs',
   'industrial-involvement': 'Industrial involvement in partial delivery of regular courses',
   'guest-lecture': 'Guest Lecture',
 };
@@ -451,6 +459,16 @@ function App() {
                 onSelect={(doc) => setSelectedSeminarDoc(doc)}
               />
             )
+          )}
+
+          {/* ─── CEA — Co-Curricular with SDG Mapping ─── */}
+          {activeView === 'cea-co-curricular' && (
+            <ComplexEngineeringActivities view="co-curricular" />
+          )}
+
+          {/* ─── CEA — Extra-Curricular Programs ─── */}
+          {activeView === 'cea-extra-curricular' && (
+            <ComplexEngineeringActivities view="extra-curricular" />
           )}
 
           {/* ─── Industrial Involvement ─── */}

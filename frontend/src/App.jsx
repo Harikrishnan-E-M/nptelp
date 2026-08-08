@@ -19,6 +19,7 @@ import InnovativeTeachingView from './components/InnovativeTeachingView';
 import IndustrialInvolvementDetail from './components/IndustrialInvolvementDetail';
 import GuestLectureDetail from './components/GuestLectureDetail';
 import ComplexEngineeringActivities from './components/ComplexEngineeringActivities';
+import CoCurricularSdgDetail from './components/CoCurricularSdgDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -463,7 +464,7 @@ function App() {
 
           {/* ─── CEA — Co-Curricular with SDG Mapping ─── */}
           {activeView === 'cea-co-curricular' && (
-            <ComplexEngineeringActivities view="co-curricular" />
+            <CoCurricularSdgDetail />
           )}
 
           {/* ─── CEA — Extra-Curricular Programs ─── */}

@@ -1357,7 +1357,8 @@ body {
 }
 
 .section-table-wrap {
-  max-height: 420px;
+  max-height: calc(100vh - 280px);
+  min-height: 400px;
   overflow-y: auto;
   overflow-x: auto;
   background: #ffffff;

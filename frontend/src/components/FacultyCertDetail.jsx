@@ -21,6 +21,7 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('none');
+  const [filterType, setFilterType] = useState('all');
 
   useEffect(() => {
     fetchRows();
@@ -41,12 +42,15 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
       setMeta(metaData);
 
       // Fetch all rows for this year
-      const rowQuery = `*[_type == "facultyCertData" && year._ref == $docId] | order(name asc) {
+      const rowQuery = `*[_type == "facultyCertData" && year._ref == $docId] | order(sNo asc) {
         _id,
+        sNo,
         name,
         courseName,
         agency,
-        grade
+        grade,
+        certificateLink,
+        category
       }`;
       const data = await client.fetch(rowQuery, { docId });
       setRows(data);
@@ -59,9 +63,24 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
     }
   };
 
+  const filterByCategory = (data, type) => {
+    if (type === 'all') return data;
+    return data.filter(row => {
+      const cat = (row.category || '').toLowerCase().trim();
+      if (type === 'elite-gold') return cat.includes('elite+gold') || cat.includes('elite + gold');
+      if (type === 'elite-silver') return cat.includes('elite+silver') || cat.includes('elite + silver');
+      if (type === 'elite') return cat === 'elite';
+      if (type === 'successfully-completed') return cat.includes('successfully completed');
+      return true;
+    });
+  };
+
   const getSortedRows = () => {
-    const sorted = [...rows];
-    if (sortBy === 'none') return sorted;
+    const filtered = filterByCategory(rows, filterType);
+    const sorted = [...filtered];
+    if (sortBy === 'none') {
+      return sorted; // Already sorted by sNo asc in GROQ query
+    }
     if (sortBy === 'name') {
       sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     } else if (sortBy === 'course') {
@@ -82,11 +101,34 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
     return sorted;
   };
 
+  const getStats = () => {
+    let eliteGold = 0;
+    let eliteSilver = 0;
+    let elite = 0;
+    let successfullyCompleted = 0;
+
+    rows.forEach(row => {
+      const cat = (row.category || '').toLowerCase().trim();
+      if (cat.includes('elite+gold') || cat.includes('elite + gold')) {
+        eliteGold++;
+      } else if (cat.includes('elite+silver') || cat.includes('elite + silver')) {
+        eliteSilver++;
+      } else if (cat === 'elite') {
+        elite++;
+      } else if (cat.includes('successfully completed')) {
+        successfullyCompleted++;
+      }
+    });
+
+    return { eliteGold, eliteSilver, elite, successfullyCompleted };
+  };
+
   if (loading) {
     return <div className="alert alert-info">Loading faculty data...</div>;
   }
 
   const sortedRows = getSortedRows();
+  const stats = getStats();
 
   return (
     <div>
@@ -129,20 +171,54 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
         </div>
       </div>
 
-      {/* Stats bar */}
+      {/* Stats Cards */}
       {meta && (
-        <div className="section-meta-bar" style={{ marginBottom: '1rem' }}>
-          <span className="section-meta-year">
-            <i className="bi bi-calendar2 me-1"></i>{meta.yearLabel || yearLabel}
-          </span>
-          <span className="faculty-stat-pill faculty-inline-pill">
-            <i className="bi bi-people me-1"></i>
-            Total Faculty: <strong className="ms-1">{meta.totalFaculty ?? '—'}</strong>
-          </span>
-          <span className="faculty-stat-pill faculty-inline-pill faculty-stat-pill--completed">
-            <i className="bi bi-patch-check me-1"></i>
-            Completed: <strong className="ms-1">{meta.completedCount ?? '—'}</strong>
-          </span>
+        <div className="stats-cards-row mb-4 mt-4">
+          <div
+            className={`stat-card ${filterType === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterType('all')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="stat-title">Total</div>
+            <div className="stat-value text-primary">{rows.length}</div>
+            <div className="stat-subtitle">All Entries</div>
+          </div>
+          <div
+            className={`stat-card ${filterType === 'elite-gold' ? 'active' : ''}`}
+            onClick={() => setFilterType('elite-gold')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="stat-title">Elite + Gold</div>
+            <div className="stat-value text-warning">{stats.eliteGold}</div>
+            <div className="stat-subtitle">Highest Achievers</div>
+          </div>
+          <div
+            className={`stat-card ${filterType === 'elite-silver' ? 'active' : ''}`}
+            onClick={() => setFilterType('elite-silver')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="stat-title">Elite + Silver</div>
+            <div className="stat-value text-info">{stats.eliteSilver}</div>
+            <div className="stat-subtitle">Silver Medalists</div>
+          </div>
+          <div
+            className={`stat-card ${filterType === 'elite' ? 'active' : ''}`}
+            onClick={() => setFilterType('elite')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="stat-title">Elite</div>
+            <div className="stat-value text-success">{stats.elite}</div>
+            <div className="stat-subtitle">Elite Achievers</div>
+          </div>
+          <div
+            className={`stat-card ${filterType === 'successfully-completed' ? 'active' : ''}`}
+            onClick={() => setFilterType('successfully-completed')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="stat-title">Successfully Completed</div>
+            <div className="stat-value text-secondary">{stats.successfullyCompleted}</div>
+            <div className="stat-subtitle">Score 40–59</div>
+          </div>
         </div>
       )}
 
@@ -162,6 +238,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
                 <th className="text-center">Name of Course Passed</th>
                 <th className="text-center">Course Offered By</th>
                 <th className="text-center">Grade / Mark</th>
+                <th className="text-center">Category</th>
+                <th className="text-center">Certificate</th>
               </tr>
             </thead>
             <tbody>
@@ -175,6 +253,27 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
                   <td>{sanitize(row.agency) || '—'}</td>
                   <td>
                     {sanitize(row.grade) ? sanitize(row.grade) : <span className="text-muted">—</span>}
+                  </td>
+                  <td>
+                    {sanitize(row.category) ? (
+                      <span className="badge bg-light text-dark border">{sanitize(row.category)}</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {row.certificateLink ? (
+                      <a
+                        href={row.certificateLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-primary"
+                      >
+                        <i className="bi bi-link-45deg"></i> Link
+                      </a>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

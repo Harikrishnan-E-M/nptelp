@@ -55,7 +55,7 @@ function parseCsvText(csvText) {
 }
 
 // ==================== CSV PARSING — FACULTY CERTIFICATION ====================
-// Columns: S.No | Name of the Faculty | Name of Course Passed | Course Offered by (agency) | Grade obtained if any
+// Columns: S.No | Name of the Faculty | Name of Course Passed | Course Offered by (agency) | Grade obtained if any | Certificate Link | Category
 function parseFacultyCsvText(csvText) {
   // Strip UTF-8 BOM and any leading invisible/control characters from the whole text
   const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
@@ -85,15 +85,19 @@ function parseFacultyCsvText(csvText) {
     }
     cols.push(stripInvisible(cur))
 
+    const sNo = parseInt(stripInvisible(cols[0] || ''), 10)
     const name = stripInvisible(cols[1] || '')
     const courseName = stripInvisible(cols[2] || '')
     if (!name) continue
 
     rows.push({
+      sNo: isNaN(sNo) ? null : sNo,
       name,
       courseName,
       agency: stripInvisible(cols[3] || ''),
       grade: stripInvisible(cols[4] || ''),
+      certificateLink: stripInvisible(cols[5] || ''),
+      category: stripInvisible(cols[6] || ''),
     })
   }
 
@@ -355,10 +359,13 @@ function PublishAndImportFacultyCsvAction({id, type}) {
             tx.create({
               _type: 'facultyCertData',
               year: {_type: 'reference', _ref: yearId, _weak: true},
+              sNo: row.sNo,
               name: row.name,
               courseName: row.courseName,
               agency: row.agency,
               grade: row.grade,
+              certificateLink: row.certificateLink,
+              category: row.category,
             })
           })
           await tx.commit()

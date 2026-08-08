@@ -14,6 +14,11 @@ export const facultyCertData = defineType({
       weak: true,
     }),
     defineField({
+      name: 'sNo',
+      type: 'number',
+      title: 'S.No',
+    }),
+    defineField({
       name: 'name',
       type: 'string',
       title: 'Faculty Name',
@@ -34,6 +39,17 @@ export const facultyCertData = defineType({
       name: 'grade',
       type: 'string',
       title: 'Grade Obtained',
+    }),
+    defineField({
+      name: 'certificateLink',
+      type: 'url',
+      title: 'Certificate Link',
+    }),
+    defineField({
+      name: 'category',
+      type: 'string',
+      title: 'Category',
+      description: 'e.g. Elite+Gold, Elite+Silver, Elite, Successfully Completed',
     }),
   ],
   preview: {

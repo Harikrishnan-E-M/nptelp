@@ -21,7 +21,10 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('none');
-  const [filterType, setFilterType] = useState('all');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalData, setModalData] = useState([]);
+  const [modalSort, setModalSort] = useState('name');
 
   useEffect(() => {
     fetchRows();
@@ -63,21 +66,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
     }
   };
 
-  const filterByCategory = (data, type) => {
-    if (type === 'all') return data;
-    return data.filter(row => {
-      const cat = (row.category || '').toLowerCase().trim();
-      if (type === 'elite-gold') return cat.includes('elite+gold') || cat.includes('elite + gold');
-      if (type === 'elite-silver') return cat.includes('elite+silver') || cat.includes('elite + silver');
-      if (type === 'elite') return cat === 'elite';
-      if (type === 'successfully-completed') return cat.includes('successfully completed');
-      return true;
-    });
-  };
-
   const getSortedRows = () => {
-    const filtered = filterByCategory(rows, filterType);
-    const sorted = [...filtered];
+    const sorted = [...rows];
     if (sortBy === 'none') {
       return sorted; // Already sorted by sNo asc in GROQ query
     }
@@ -123,6 +113,55 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
     return { eliteGold, eliteSilver, elite, successfullyCompleted };
   };
 
+  const handleCardClick = (type, title) => {
+    let filtered = [...rows];
+    if (type !== 'all') {
+      filtered = rows.filter(row => {
+        const cat = (row.category || '').toLowerCase().trim();
+        if (type === 'elite-gold') return cat.includes('elite+gold') || cat.includes('elite + gold');
+        if (type === 'elite-silver') return cat.includes('elite+silver') || cat.includes('elite + silver');
+        if (type === 'elite') return cat === 'elite';
+        if (type === 'successfully-completed') return cat.includes('successfully completed');
+        return true;
+      });
+    }
+    
+    setModalTitle(title);
+    setModalData(filtered.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+    setModalSort('name');
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+  };
+
+  const getSortedModalData = () => {
+    const data = [...modalData];
+    if (modalSort === 'none') {
+      return data.sort((a, b) => (a.sNo || 0) - (b.sNo || 0));
+    }
+    if (modalSort === 'name') {
+      return data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    if (modalSort === 'course') {
+      return data.sort((a, b) => (a.courseName || '').localeCompare(b.courseName || ''));
+    }
+    if (modalSort === 'mark') {
+      data.sort((a, b) => {
+        const aNum = parseFloat(a.grade);
+        const bNum = parseFloat(b.grade);
+        const aValid = !isNaN(aNum);
+        const bValid = !isNaN(bNum);
+        if (aValid && bValid) return bNum - aNum;
+        if (aValid) return -1;
+        if (bValid) return 1;
+        return (a.grade || '').localeCompare(b.grade || '');
+      });
+    }
+    return data;
+  };
+
   if (loading) {
     return <div className="alert alert-info">Loading faculty data...</div>;
   }
@@ -148,7 +187,7 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
             <i className="bi bi-arrow-left me-2"></i>Back to Faculty NPTEL Certification
           </button>
           <h2 className="detail-top-title" style={{ margin: 0 }}>
-            <i className="bi bi-award me-2"></i>Faculty NPTEL Certification — {meta?.yearLabel || yearLabel}
+            <i className="bi bi-calendar2-week me-2"></i>{meta?.yearLabel || yearLabel}
           </h2>
         </div>
 
@@ -175,8 +214,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
       {meta && (
         <div className="stats-cards-row mb-4 mt-4">
           <div
-            className={`stat-card ${filterType === 'all' ? 'active' : ''}`}
-            onClick={() => setFilterType('all')}
+            className="stat-card"
+            onClick={() => handleCardClick('all', `Total - ${meta?.yearLabel || yearLabel}`)}
             style={{ cursor: 'pointer' }}
           >
             <div className="stat-title">Total</div>
@@ -184,8 +223,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
             <div className="stat-subtitle">All Entries</div>
           </div>
           <div
-            className={`stat-card ${filterType === 'elite-gold' ? 'active' : ''}`}
-            onClick={() => setFilterType('elite-gold')}
+            className="stat-card"
+            onClick={() => handleCardClick('elite-gold', `Elite + Gold - ${meta?.yearLabel || yearLabel}`)}
             style={{ cursor: 'pointer' }}
           >
             <div className="stat-title">Elite + Gold</div>
@@ -193,8 +232,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
             <div className="stat-subtitle">Highest Achievers</div>
           </div>
           <div
-            className={`stat-card ${filterType === 'elite-silver' ? 'active' : ''}`}
-            onClick={() => setFilterType('elite-silver')}
+            className="stat-card"
+            onClick={() => handleCardClick('elite-silver', `Elite + Silver - ${meta?.yearLabel || yearLabel}`)}
             style={{ cursor: 'pointer' }}
           >
             <div className="stat-title">Elite + Silver</div>
@@ -202,8 +241,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
             <div className="stat-subtitle">Silver Medalists</div>
           </div>
           <div
-            className={`stat-card ${filterType === 'elite' ? 'active' : ''}`}
-            onClick={() => setFilterType('elite')}
+            className="stat-card"
+            onClick={() => handleCardClick('elite', `Elite - ${meta?.yearLabel || yearLabel}`)}
             style={{ cursor: 'pointer' }}
           >
             <div className="stat-title">Elite</div>
@@ -211,8 +250,8 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
             <div className="stat-subtitle">Elite Achievers</div>
           </div>
           <div
-            className={`stat-card ${filterType === 'successfully-completed' ? 'active' : ''}`}
-            onClick={() => setFilterType('successfully-completed')}
+            className="stat-card"
+            onClick={() => handleCardClick('successfully-completed', `Successfully Completed - ${meta?.yearLabel || yearLabel}`)}
             style={{ cursor: 'pointer' }}
           >
             <div className="stat-title">Successfully Completed</div>
@@ -279,6 +318,94 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal matching Student NPTEL layout */}
+      {modalOpen && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-block">
+                <h5 className="mb-0">{modalTitle}</h5>
+                <span className="modal-subtitle">{modalData.length} entries</span>
+              </div>
+              <button className="btn-close" onClick={closeModal} aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-toolbar">
+                <span className="modal-chip">Showing {modalData.length} records</span>
+                <div className="modal-sort-control">
+                  <label htmlFor="modal-sort-select" className="modal-sort-label">Sort by:</label>
+                  <select
+                    id="modal-sort-select"
+                    className="modal-sort-select"
+                    value={modalSort}
+                    onChange={(e) => setModalSort(e.target.value)}
+                  >
+                    <option value="none">No Sort</option>
+                    <option value="name">Name</option>
+                    <option value="course">Course</option>
+                    <option value="mark">Mark</option>
+                  </select>
+                </div>
+              </div>
+              <div className="table-container modal-table">
+                <table className="table table-bordered table-striped align-middle text-center">
+                  <thead>
+                    <tr>
+                      <th className="text-center">#</th>
+                      <th className="text-center">Name of Faculty</th>
+                      <th className="text-center">Name of Course Passed</th>
+                      <th className="text-center">Course Offered By</th>
+                      <th className="text-center">Grade / Mark</th>
+                      <th className="text-center">Category</th>
+                      <th className="text-center">Certificate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getSortedModalData().map((item, index) => (
+                      <tr
+                        key={item._id}
+                        onClick={() => item.certificateLink && window.open(item.certificateLink, '_blank', 'noreferrer')}
+                        style={{ cursor: item.certificateLink ? 'pointer' : 'default' }}
+                        title={item.certificateLink ? 'Click to view certificate' : 'No certificate available'}
+                      >
+                        <td>{index + 1}</td>
+                        <td className="text-start">
+                          <strong>{sanitize(item.name) || '—'}</strong>
+                        </td>
+                        <td className="text-start">{sanitize(item.courseName) || '—'}</td>
+                        <td>{sanitize(item.agency) || '—'}</td>
+                        <td>
+                          {sanitize(item.grade) ? sanitize(item.grade) : <span className="text-muted">—</span>}
+                        </td>
+                        <td>
+                          {sanitize(item.category) ? (
+                            <span className="badge bg-light text-dark border">{sanitize(item.category)}</span>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
+                        <td>
+                          {item.certificateLink ? (
+                            <span className="cert-link-badge">🔗 View</span>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {modalData.length === 0 && (
+                  <div className="p-4 text-center text-muted">
+                    No records found for this selection.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -18,7 +18,7 @@ import PlacementInternshipDetail from './components/PlacementInternshipDetail';
 import InnovativeTeachingView from './components/InnovativeTeachingView';
 import IndustrialInvolvementDetail from './components/IndustrialInvolvementDetail';
 import GuestLectureDetail from './components/GuestLectureDetail';
-import ComplexEngineeringActivities from './components/ComplexEngineeringActivities';
+import StrategiesCepView from './components/StrategiesCepView';
 import CoCurricularSdgDetail from './components/CoCurricularSdgDetail';
 import './App.css';
 
@@ -66,8 +66,7 @@ const MENU_STRUCTURE = [
   },
   {
     id: '2.7', label: '2.7', children: [
-      { id: 'cea-co-curricular',    label: 'Co-Curricular with SDG Mapping' },
-      { id: 'cea-extra-curricular', label: 'Extra-Curricular Programs' },
+      { id: 'cea-strategies', label: 'Strategies Employed to Solve Complex Engineering Problems' },
       { id: 'csea', label: 'CSEA', url: 'https://csea-website-d5dv.vercel.app/' },
     ],
   },
@@ -93,8 +92,7 @@ const VIEW_LABELS = {
   'student-nptel': 'Student NPTEL Certification',
   'faculty-cert':  'Faculty NPTEL Certification',
   'non-formal':    'Non Formal Education',
-  'cea-co-curricular':    'Co-Curricular Activities with SDG Mapping',
-  'cea-extra-curricular': 'Extra-Curricular Programs',
+  'cea-strategies': 'Strategies Employed to Solve Complex Engineering Problems',
   'industrial-involvement': 'Industrial involvement in partial delivery of regular courses',
   'guest-lecture': 'Guest Lecture',
 };
@@ -478,14 +476,9 @@ function App() {
             )
           )}
 
-          {/* ─── CEA — Co-Curricular with SDG Mapping ─── */}
-          {activeView === 'cea-co-curricular' && (
-            <CoCurricularSdgDetail />
-          )}
-
-          {/* ─── CEA — Extra-Curricular Programs ─── */}
-          {activeView === 'cea-extra-curricular' && (
-            <ComplexEngineeringActivities view="extra-curricular" />
+          {/* ─── CEA — Strategies Employed to Solve Complex Engineering Problems ─── */}
+          {activeView === 'cea-strategies' && (
+            <StrategiesCepView />
           )}
 
           {/* ─── Industrial Involvement ─── */}

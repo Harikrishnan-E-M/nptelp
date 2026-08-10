@@ -1871,6 +1871,62 @@ export const csvImporterPlugin = definePlugin({
           return action
         })
       }
+      // CEP — Problem-Based Learning
+      if (context.schemaType === 'cepUpload_pbl') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepPblAction
+          if (action.action === 'delete') return DeleteAndCleanupCepPblAction
+          return action
+        })
+      }
+      // CEP — Project-Based Learning
+      if (context.schemaType === 'cepUpload_projbl') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepProjblAction
+          if (action.action === 'delete') return DeleteAndCleanupCepProjblAction
+          return action
+        })
+      }
+      // CEP — Mini Projects
+      if (context.schemaType === 'cepUpload_mini') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepMiniAction
+          if (action.action === 'delete') return DeleteAndCleanupCepMiniAction
+          return action
+        })
+      }
+      // CEP — Capstone Projects
+      if (context.schemaType === 'cepUpload_capstone') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepCapstoneAction
+          if (action.action === 'delete') return DeleteAndCleanupCepCapstoneAction
+          return action
+        })
+      }
+      // CEP — Integrated Design Projects
+      if (context.schemaType === 'cepUpload_idp') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepIdpAction
+          if (action.action === 'delete') return DeleteAndCleanupCepIdpAction
+          return action
+        })
+      }
+      // CEP — Hackathons
+      if (context.schemaType === 'cepUpload_hackathon') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepHackathonAction
+          if (action.action === 'delete') return DeleteAndCleanupCepHackathonAction
+          return action
+        })
+      }
+      // CEP — Activity Based Learning
+      if (context.schemaType === 'cepUpload_abl') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportCepAblAction
+          if (action.action === 'delete') return DeleteAndCleanupCepAblAction
+          return action
+        })
+      }
       return prev
     },
   },
@@ -3624,3 +3680,267 @@ function DeleteAndCleanupGuestLectureAction({id, type}) {
     icon: () => '🗑️',
   }
 }
+
+// ==================== CEP STRATEGIES — SHARED HELPERS ====================
+
+const stripInvisibleCep = (str) =>
+  (str || '').replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+function parseCepCsvLines(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const result = []
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+    for (const ch of line) {
+      if (ch === '"') { q = !q }
+      else if (ch === ',' && !q) { cols.push(stripInvisibleCep(cur)); cur = '' }
+      else { cur += ch }
+    }
+    cols.push(stripInvisibleCep(cur))
+    result.push(cols)
+  }
+  return result
+}
+
+async function batchDeleteCepDocs(client, ids) {
+  const batchSize = 100
+  for (let i = 0; i < ids.length; i += batchSize) {
+    const tx = client.transaction()
+    ids.slice(i, i + batchSize).forEach((id) => tx.delete(id))
+    await tx.commit()
+  }
+}
+
+async function batchCreateCepDocs(client, dataType, rows) {
+  const batchSize = 100
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const tx = client.transaction()
+    rows.slice(i, i + batchSize).forEach((row) => {
+      const clean = Object.fromEntries(
+        Object.entries(row).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      )
+      tx.create({_type: dataType, ...clean})
+    })
+    await tx.commit()
+  }
+}
+
+// Factory — Publish action: publishes the doc then imports the attached CSV into dataType records
+function makeCepPublishAction({uploadType, dataType, label, mapRow}) {
+  return function CepPublishAction({id, type}) {
+    const {publish} = useDocumentOperation(id, type)
+    const [isRunning, setIsRunning] = useState(false)
+    const client = useClient({apiVersion: '2024-01-30'})
+    const toast = useToast()
+    const docId = id.replace(/^drafts\./, '')
+
+    const onHandle = useCallback(() => {
+      if (publish.disabled || isRunning) return
+      publish.execute()
+      setIsRunning(true)
+
+      setTimeout(async () => {
+        try {
+          const doc = await client.fetch(
+            `*[_type == $uploadType && _id == $docId][0]{
+              _id, csvAssetId, dataCount,
+              "csv": csvFile{asset->{_id,url}}
+            }`,
+            {uploadType, docId}
+          )
+
+          if (!doc?.csv?.asset?.url) {
+            toast.push({status: 'warning', title: 'No CSV file attached — nothing imported.'})
+            setIsRunning(false)
+            return
+          }
+
+          const assetId = doc.csv.asset._id
+          if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+            toast.push({status: 'info', title: 'CSV unchanged — no re-import needed.'})
+            setIsRunning(false)
+            return
+          }
+
+          toast.push({status: 'info', title: `Importing ${label} CSV...`})
+
+          const response = await fetch(doc.csv.asset.url)
+          const csvText = await response.text()
+          const allLines = parseCepCsvLines(csvText)
+
+          const rows = allLines
+            .map((cols) => mapRow(cols))
+            .filter((r) => Object.values(r).filter((v) => v !== undefined && v !== '').length > 1)
+
+          const existingIds = await client.fetch('*[_type == $dataType]._id', {dataType})
+          if (existingIds.length > 0) {
+            toast.push({status: 'info', title: `Removing ${existingIds.length} old records...`})
+            await batchDeleteCepDocs(client, existingIds)
+          }
+
+          toast.push({status: 'info', title: `Creating ${rows.length} records...`})
+          await batchCreateCepDocs(client, dataType, rows)
+
+          await client.patch(docId).set({
+            dataCount: rows.length,
+            csvAssetId: assetId,
+            csvImportedAt: new Date().toISOString(),
+          }).commit()
+
+          toast.push({
+            status: 'success',
+            title: `✅ Published & imported ${rows.length} ${label} records!`,
+            description: 'Data is now live on the frontend.',
+          })
+        } catch (err) {
+          console.error(`${label} CSV import error:`, err)
+          toast.push({
+            status: 'error',
+            title: `${label} CSV import failed (document is still published)`,
+            description: err.message,
+          })
+        } finally {
+          setIsRunning(false)
+        }
+      }, 2000)
+    }, [publish, isRunning, client, docId, toast])
+
+    return {
+      label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+      disabled: !!publish.disabled || isRunning,
+      onHandle,
+      tone: 'primary',
+      shortcut: 'Ctrl+Alt+P',
+    }
+  }
+}
+
+// Factory — Delete action: deletes all dataType records then deletes the upload doc
+function makeCepDeleteAction({dataType, label}) {
+  return function CepDeleteAction({id, type}) {
+    const {delete: deleteOp} = useDocumentOperation(id, type)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const client = useClient({apiVersion: '2024-01-30'})
+    const toast = useToast()
+
+    const onHandle = useCallback(async () => {
+      if (deleteOp.disabled || isDeleting) return
+      if (!window.confirm(
+        `Are you sure? This will delete this ${label} upload document AND ALL associated data records. This cannot be undone.`
+      )) return
+
+      setIsDeleting(true)
+      toast.push({status: 'info', title: `Cleaning up ${label} data...`})
+
+      try {
+        const existingIds = await client.fetch('*[_type == $dataType]._id', {dataType})
+        if (existingIds.length > 0) {
+          toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+          await batchDeleteCepDocs(client, existingIds)
+        }
+
+        toast.push({status: 'info', title: `Deleting ${label} upload document...`})
+        deleteOp.execute()
+
+        toast.push({
+          status: 'success',
+          title: `Successfully deleted ${label} upload document and all its data.`,
+        })
+      } catch (err) {
+        console.error(`${label} delete cleanup error:`, err)
+        toast.push({
+          status: 'error',
+          title: `Failed to delete associated ${label} data`,
+          description: err.message,
+        })
+      } finally {
+        setIsDeleting(false)
+      }
+    }, [deleteOp, isDeleting, client, toast])
+
+    return {
+      label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+      disabled: !!deleteOp.disabled || isDeleting,
+      onHandle,
+      tone: 'critical',
+      icon: () => '🗑️',
+    }
+  }
+}
+
+// Standard column mapper: S.No | col1 | col2 | Complex Problem | SDGs | Link
+const cepStandardMapRow = (col1Field, col2Field) => (c) => ({
+  sNo:            parseFloat(c[0]) || undefined,
+  [col1Field]:    stripInvisibleCep(c[1]) || undefined,
+  [col2Field]:    stripInvisibleCep(c[2]) || undefined,
+  complexProblem: stripInvisibleCep(c[3]) || undefined,
+  sdg:            stripInvisibleCep(c[4]) || undefined,
+  link:           stripInvisibleCep(c[5]) || undefined,
+})
+
+// ── Problem-Based Learning ────────────────────────────────────────────────────
+const PublishAndImportCepPblAction = makeCepPublishAction({
+  uploadType: 'cepUpload_pbl', dataType: 'cepData_pbl', label: 'Problem-Based Learning',
+  mapRow: cepStandardMapRow('courseCodeTitle', 'learningActivity'),
+})
+const DeleteAndCleanupCepPblAction = makeCepDeleteAction({dataType: 'cepData_pbl', label: 'Problem-Based Learning'})
+
+// ── Project-Based Learning ────────────────────────────────────────────────────
+const PublishAndImportCepProjblAction = makeCepPublishAction({
+  uploadType: 'cepUpload_projbl', dataType: 'cepData_projbl', label: 'Project-Based Learning',
+  mapRow: cepStandardMapRow('courseCodeTitle', 'learningActivity'),
+})
+const DeleteAndCleanupCepProjblAction = makeCepDeleteAction({dataType: 'cepData_projbl', label: 'Project-Based Learning'})
+
+// ── Mini Projects ─────────────────────────────────────────────────────────────
+const PublishAndImportCepMiniAction = makeCepPublishAction({
+  uploadType: 'cepUpload_mini', dataType: 'cepData_mini', label: 'Mini Projects',
+  mapRow: cepStandardMapRow('courseCodeTitle', 'learningActivity'),
+})
+const DeleteAndCleanupCepMiniAction = makeCepDeleteAction({dataType: 'cepData_mini', label: 'Mini Projects'})
+
+// ── Capstone Projects ─────────────────────────────────────────────────────────
+const PublishAndImportCepCapstoneAction = makeCepPublishAction({
+  uploadType: 'cepUpload_capstone', dataType: 'cepData_capstone', label: 'Capstone Projects',
+  mapRow: cepStandardMapRow('courseCodeTitle', 'learningActivity'),
+})
+const DeleteAndCleanupCepCapstoneAction = makeCepDeleteAction({dataType: 'cepData_capstone', label: 'Capstone Projects'})
+
+// ── Integrated Design Projects ────────────────────────────────────────────────
+const PublishAndImportCepIdpAction = makeCepPublishAction({
+  uploadType: 'cepUpload_idp', dataType: 'cepData_idp', label: 'Integrated Design Projects',
+  mapRow: cepStandardMapRow('courseCodeTitle', 'learningActivity'),
+})
+const DeleteAndCleanupCepIdpAction = makeCepDeleteAction({dataType: 'cepData_idp', label: 'Integrated Design Projects'})
+
+// ── Hackathons — S.No | Student Team | Hackathon & Problem Statement | Complex | SDGs | Link ──
+const PublishAndImportCepHackathonAction = makeCepPublishAction({
+  uploadType: 'cepUpload_hackathon', dataType: 'cepData_hackathon', label: 'Hackathons',
+  mapRow: (c) => ({
+    sNo:              parseFloat(c[0]) || undefined,
+    studentTeam:      stripInvisibleCep(c[1]) || undefined,
+    hackathonProblem: stripInvisibleCep(c[2]) || undefined,
+    complexProblem:   stripInvisibleCep(c[3]) || undefined,
+    sdg:              stripInvisibleCep(c[4]) || undefined,
+    link:             stripInvisibleCep(c[5]) || undefined,
+  }),
+})
+const DeleteAndCleanupCepHackathonAction = makeCepDeleteAction({dataType: 'cepData_hackathon', label: 'Hackathons'})
+
+// ── Activity Based Learning — S.No | Organized By | Complex Relevance | SDGs | Link ─────────
+const PublishAndImportCepAblAction = makeCepPublishAction({
+  uploadType: 'cepUpload_abl', dataType: 'cepData_abl', label: 'Activity Based Learning',
+  mapRow: (c) => ({
+    sNo:            parseFloat(c[0]) || undefined,
+    organizedBy:    stripInvisibleCep(c[1]) || undefined,
+    complexProblem: stripInvisibleCep(c[2]) || undefined,
+    sdg:            stripInvisibleCep(c[3]) || undefined,
+    link:           stripInvisibleCep(c[4]) || undefined,
+  }),
+})
+const DeleteAndCleanupCepAblAction = makeCepDeleteAction({dataType: 'cepData_abl', label: 'Activity Based Learning'})

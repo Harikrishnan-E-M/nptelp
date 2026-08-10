@@ -236,9 +236,6 @@ function Statistics({ year, onBack }) {
     return (
       <div 
         className="batch-bar-row" 
-        onClick={onClick}
-        onMouseMove={handleCardMouseMove}
-        onMouseLeave={handleCardMouseLeave}
       >
         <div className="batch-bar-label">{label}</div>
         <div className="batch-bar-wrapper">
@@ -326,57 +323,27 @@ function Statistics({ year, onBack }) {
       {/* Statistics Cards */}
       {calculatedStats && (
         <div className="stats-cards-row mb-4">
-          <div
-            className={`stat-card ${filterType === 'all' ? 'active' : ''}`}
-            onClick={() => handleCardClick('all')}
-            onMouseMove={handleCardMouseMove}
-            onMouseLeave={handleCardMouseLeave}
-            style={{ cursor: 'pointer' }}
-          >
+          <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Total Students</div>
             <div className="stat-value text-primary">{calculatedStats.total}</div>
             <div className="stat-subtitle">All Batches</div>
           </div>
-          <div
-            className={`stat-card ${filterType === 'elite-gold' ? 'active' : ''}`}
-            onClick={() => handleCardClick('elite-gold')}
-            onMouseMove={handleCardMouseMove}
-            onMouseLeave={handleCardMouseLeave}
-            style={{ cursor: 'pointer' }}
-          >
+          <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Elite + Gold</div>
             <div className="stat-value text-warning">{calculatedStats.eliteGold}</div>
             <div className="stat-subtitle">Highest Achievers</div>
           </div>
-          <div
-            className={`stat-card ${filterType === 'elite-silver' ? 'active' : ''}`}
-            onClick={() => handleCardClick('elite-silver')}
-            onMouseMove={handleCardMouseMove}
-            onMouseLeave={handleCardMouseLeave}
-            style={{ cursor: 'pointer' }}
-          >
+          <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Elite + Silver</div>
             <div className="stat-value text-info">{calculatedStats.eliteSilver}</div>
             <div className="stat-subtitle">Silver Medalists</div>
           </div>
-          <div
-            className={`stat-card ${filterType === 'elite' ? 'active' : ''}`}
-            onClick={() => handleCardClick('elite')}
-            onMouseMove={handleCardMouseMove}
-            onMouseLeave={handleCardMouseLeave}
-            style={{ cursor: 'pointer' }}
-          >
+          <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Elite</div>
             <div className="stat-value text-success">{calculatedStats.elite}</div>
             <div className="stat-subtitle">Elite Achievers</div>
           </div>
-          <div
-            className={`stat-card ${filterType === 'successfully-completed' ? 'active' : ''}`}
-            onClick={() => handleCardClick('successfully-completed')}
-            onMouseMove={handleCardMouseMove}
-            onMouseLeave={handleCardMouseLeave}
-            style={{ cursor: 'pointer' }}
-          >
+          <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Successfully Completed</div>
             <div className="stat-value text-secondary">{calculatedStats.successfullyCompleted}</div>
             <div className="stat-subtitle">Score 40–59</div>

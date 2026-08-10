@@ -47,10 +47,22 @@ function Statistics({ year, onBack }) {
   };
 
 
+  // Returns true if a course is rejected (course code ends with 'REJ')
+  const isRejected = (item) => {
+    const code = (item.courseCode || '').trim().toUpperCase();
+    return code.endsWith('REJ');
+  };
+
+  // Accepted-only data: used for student details & course display
+  const getAcceptedData = () => {
+    if (!stats || !stats.data) return [];
+    return stats.data.filter(item => !isRejected(item));
+  };
+
   const calculateStats = () => {
     if (!stats || !stats.data) return null;
     
-    const data = stats.data;
+    const data = stats.data; // ALL data — counts unchanged
     const total = data.length;
     
     // Elite + Gold: Score >= 90
@@ -133,14 +145,18 @@ function Statistics({ year, onBack }) {
   const handleCardClick = (type) => {
     setFilterType(type);
     if (stats && stats.data) {
-      openModal(`${getCategoryLabel(type)} - ${year.yearLabel}`, filterByCategory(stats.data, type));
+      // Show only accepted (non-REJ) entries in student detail modal
+      openModal(`${getCategoryLabel(type)} - ${year.yearLabel}`, filterByCategory(getAcceptedData(), type));
     }
   };
 
   const calculateCourseStats = () => {
     if (!stats || !stats.data) return [];
 
-    const grouped = stats.data.reduce((acc, item) => {
+    // Only accepted (non-REJ) courses shown in course-wise table
+    const acceptedData = getAcceptedData();
+
+    const grouped = acceptedData.reduce((acc, item) => {
       const key = item.courseCode || 'Unknown';
       if (!acc[key]) {
         acc[key] = {
@@ -171,7 +187,8 @@ function Statistics({ year, onBack }) {
 
   const handleCourseRowClick = (courseCode) => {
     if (!stats || !stats.data) return;
-    const courseData = stats.data.filter(item => (item.courseCode || 'Unknown') === courseCode);
+    // Show only accepted entries for this course
+    const courseData = getAcceptedData().filter(item => (item.courseCode || 'Unknown') === courseCode);
     openModal(`Course: ${courseCode} — ${year.yearLabel}`, courseData);
   };
 
@@ -239,7 +256,8 @@ function Statistics({ year, onBack }) {
 
   const handleBatchBarClick = (batch, type) => {
     if (!stats || !stats.data) return;
-    const batchData = stats.data.filter(item => (item.batch || 'Unknown') === batch);
+    // Show only accepted (non-REJ) entries in student detail modal
+    const batchData = getAcceptedData().filter(item => (item.batch || 'Unknown') === batch);
     const filtered = filterByCategory(batchData, type);
     openModal(`${batch} - ${getCategoryLabel(type)} (${year.yearLabel})`, filtered);
   };

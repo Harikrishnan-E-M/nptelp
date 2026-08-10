@@ -68,6 +68,7 @@ const MENU_STRUCTURE = [
     id: '2.7', label: '2.7', children: [
       { id: 'cea-co-curricular',    label: 'Co-Curricular with SDG Mapping' },
       { id: 'cea-extra-curricular', label: 'Extra-Curricular Programs' },
+      { id: 'csea', label: 'CSEA', url: 'https://csea-website-d5dv.vercel.app/' },
     ],
   },
   {
@@ -112,7 +113,22 @@ function SidebarItem({ item, activeView, openGroups, toggleGroup, onSelect, dept
   const isLeafActive  = item.id === activeView;
 
   if (!hasChildren) {
-    // Leaf node
+    // Leaf node — external link
+    if (item.url) {
+      return (
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sidebar-leaf"
+          style={{ paddingLeft: `${1.1 + depth * 0.85}rem`, textDecoration: 'none' }}
+        >
+          <span className="sidebar-leaf-dot" />
+          {item.label}
+        </a>
+      );
+    }
+    // Leaf node — internal navigation
     return (
       <button
         className={`sidebar-leaf ${isLeafActive ? 'sidebar-leaf-active' : ''}`}

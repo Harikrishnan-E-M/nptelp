@@ -1951,6 +1951,22 @@ export const csvImporterPlugin = definePlugin({
           return action
         })
       }
+      // 6.2.3 Faculty Developmental Activities
+      if (context.schemaType === 'nba623FacultyDev') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportNba623FacultyDevAction
+          if (action.action === 'delete') return DeleteAndCleanupNba623FacultyDevAction
+          return action
+        })
+      }
+      // 6.2.3 Patent
+      if (context.schemaType === 'nba623Patent') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportNba623PatentAction
+          if (action.action === 'delete') return DeleteAndCleanupNba623PatentAction
+          return action
+        })
+      }
       return prev
     },
   },
@@ -3333,6 +3349,424 @@ function DeleteAndCleanupNba62BookAction({id, type}) {
     } catch (err) {
       console.error('6.2 Book delete error:', err)
       toast.push({status: 'error', title: 'Failed to delete 6.2 Book data', description: err.message})
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
+// ==================== CSV PARSING — 6.2.3 FACULTY DEV. ACTIVITIES ====================
+// Columns: S.No | Name of The Faculty | Year/Sem | Subject Code | Subject Name | Working models and prototypes developed (Description) | Link
+function parseNba623FacultyDevCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const facultyName = stripInvisible(cols[1] || '')
+    if (!facultyName) continue
+
+    rows.push({
+      sNo:         parseInt(cols[0], 10) || null,
+      facultyName,
+      yearSem:     stripInvisible(cols[2] || ''),
+      subjectCode: stripInvisible(cols[3] || ''),
+      subjectName: stripInvisible(cols[4] || ''),
+      description: stripInvisible(cols[5] || ''),
+      link:        stripInvisible(cols[6] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — 6.2.3 FACULTY DEV ====================
+function PublishAndImportNba623FacultyDevAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing 6.2.3 Faculty Dev. document...'})
+
+    setTimeout(async () => {
+      try {
+        const doc = await client.fetch(
+          `*[_type == "nba623FacultyDev" && _id == $docId][0]{
+            _id, csvAssetId, dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({status: 'success', title: 'Published', description: 'No CSV file attached — nothing to import.'})
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({status: 'success', title: 'Published! CSV already up to date.', description: `${doc.dataCount} records already imported.`})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing 6.2.3 Faculty Dev CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseNba623FacultyDevCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "nba623FacultyDevData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} 6.2.3 Faculty Dev records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'nba623FacultyDevData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:         row.sNo,
+              facultyName: row.facultyName,
+              yearSem:     row.yearSem || undefined,
+              subjectCode: row.subjectCode || undefined,
+              subjectName: row.subjectName || undefined,
+              description: row.description || undefined,
+              link:        row.link || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client.patch(docId).set({
+          dataCount: rows.length,
+          csvAssetId: assetId,
+          csvImportedAt: new Date().toISOString(),
+        }).commit()
+
+        toast.push({status: 'success', title: `✅ Published & imported ${rows.length} 6.2.3 Faculty Dev records!`})
+      } catch (err) {
+        console.error('6.2.3 Faculty Dev CSV import error:', err)
+        toast.push({status: 'error', title: '6.2.3 Faculty Dev CSV import failed', description: err.message})
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — 6.2.3 FACULTY DEV ====================
+function DeleteAndCleanupNba623FacultyDevAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+    if (!window.confirm('Are you sure? This will delete the 6.2.3 Faculty Dev document AND ALL associated data records. This cannot be undone.')) return
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up 6.2.3 Faculty Dev data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "nba623FacultyDevData" && parent._ref == $docId]._id',
+        {docId}
+      )
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+      deleteOp.execute()
+      toast.push({status: 'success', title: 'Successfully deleted 6.2.3 Faculty Dev document and all its data.'})
+    } catch (err) {
+      console.error('6.2.3 Faculty Dev delete error:', err)
+      toast.push({status: 'error', title: 'Failed to delete 6.2.3 Faculty Dev data', description: err.message})
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
+// ==================== CSV PARSING — 6.2.3 PATENT ====================
+// Columns: S.No | Dept | Title of Invention | Patent Application Number | Status | Name of the Inventors / Department (KEC Alone) | Link
+function parseNba623PatentCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const titleOfInvention = stripInvisible(cols[2] || '')
+    if (!titleOfInvention) continue
+
+    rows.push({
+      sNo:                    parseInt(cols[0], 10) || null,
+      dept:                   stripInvisible(cols[1] || ''),
+      titleOfInvention,
+      patentApplicationNumber: stripInvisible(cols[3] || ''),
+      status:                 stripInvisible(cols[4] || ''),
+      inventors:              stripInvisible(cols[5] || ''),
+      link:                   stripInvisible(cols[6] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — 6.2.3 PATENT ====================
+function PublishAndImportNba623PatentAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing 6.2.3 Patent document...'})
+
+    setTimeout(async () => {
+      try {
+        const doc = await client.fetch(
+          `*[_type == "nba623Patent" && _id == $docId][0]{
+            _id, csvAssetId, dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({status: 'success', title: 'Published', description: 'No CSV file attached — nothing to import.'})
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({status: 'success', title: 'Published! CSV already up to date.', description: `${doc.dataCount} records already imported.`})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing 6.2.3 Patent CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseNba623PatentCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "nba623PatentData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} Patent records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'nba623PatentData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:                     row.sNo,
+              dept:                    row.dept || undefined,
+              titleOfInvention:        row.titleOfInvention,
+              patentApplicationNumber: row.patentApplicationNumber || undefined,
+              status:                  row.status || undefined,
+              inventors:               row.inventors || undefined,
+              link:                    row.link || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client.patch(docId).set({
+          dataCount: rows.length,
+          csvAssetId: assetId,
+          csvImportedAt: new Date().toISOString(),
+        }).commit()
+
+        toast.push({status: 'success', title: `✅ Published & imported ${rows.length} Patent records!`})
+      } catch (err) {
+        console.error('6.2.3 Patent CSV import error:', err)
+        toast.push({status: 'error', title: '6.2.3 Patent CSV import failed', description: err.message})
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — 6.2.3 PATENT ====================
+function DeleteAndCleanupNba623PatentAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+    if (!window.confirm('Are you sure? This will delete the 6.2.3 Patent document AND ALL associated data records. This cannot be undone.')) return
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up 6.2.3 Patent data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "nba623PatentData" && parent._ref == $docId]._id',
+        {docId}
+      )
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+      deleteOp.execute()
+      toast.push({status: 'success', title: 'Successfully deleted 6.2.3 Patent document and all its data.'})
+    } catch (err) {
+      console.error('6.2.3 Patent delete error:', err)
+      toast.push({status: 'error', title: 'Failed to delete 6.2.3 Patent data', description: err.message})
     } finally {
       setIsDeleting(false)
     }

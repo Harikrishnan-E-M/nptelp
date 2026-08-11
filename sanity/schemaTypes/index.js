@@ -50,6 +50,11 @@ import {nba62Conference} from './nba62Conference'
 import {nba62ConferenceData} from './nba62ConferenceData'
 import {nba62Book} from './nba62Book'
 import {nba62BookData} from './nba62BookData'
+// ── NBA 6.2.3 — Faculty Developmental Activities ──────────────────────────────
+import {nba623FacultyDev} from './nba623FacultyDev'
+import {nba623FacultyDevData} from './nba623FacultyDevData'
+import {nba623Patent} from './nba623Patent'
+import {nba623PatentData} from './nba623PatentData'
 
 export const schemaTypes = [
   nbaIct,
@@ -94,4 +99,7 @@ export const schemaTypes = [
   nba62Journal,    nba62JournalData,
   nba62Conference, nba62ConferenceData,
   nba62Book,       nba62BookData,
+  // NBA 6.2.3
+  nba623FacultyDev, nba623FacultyDevData,
+  nba623Patent,     nba623PatentData,
 ]

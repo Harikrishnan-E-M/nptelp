@@ -23,13 +23,14 @@ import CoCurricularSdgDetail from './components/CoCurricularSdgDetail';
 import Nba62JournalDetail from './components/Nba62JournalDetail';
 import Nba62ConferenceDetail from './components/Nba62ConferenceDetail';
 import Nba62BookDetail from './components/Nba62BookDetail';
+import Nba623FacultyDevDetail from './components/Nba623FacultyDevDetail';
+import Nba623PatentDetail from './components/Nba623PatentDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
 const MENU_STRUCTURE = [
   {
     id: '2.1', label: '2.1', children: [
-      { id: 'ict',        label: 'ICT Tools' },
       { id: 'innovative', label: 'Innovative Teaching' },
     ],
   },
@@ -80,10 +81,29 @@ const MENU_STRUCTURE = [
     ],
   },
   {
+    id: '6.1', label: '6.1', children: [
+      {
+        id: '6.1.3', label: '6.1.3', children: [
+          { id: 'ict', label: 'ICT Tools' },
+        ],
+      },
+    ],
+  },
+  {
     id: '6.2', label: '6.2', children: [
-      { id: 'nba62-journal',    label: 'Journal' },
-      { id: 'nba62-conference', label: 'Conference' },
-      { id: 'nba62-book',       label: 'Book' },
+      {
+        id: '6.2.1', label: '6.2.1', children: [
+          { id: 'nba62-journal',    label: 'Journal' },
+          { id: 'nba62-conference', label: 'Conference' },
+          { id: 'nba62-book',       label: 'Book' },
+        ],
+      },
+      {
+        id: '6.2.3', label: '6.2.3', children: [
+          { id: 'nba623-faculty-dev', label: 'Working Models & Prototypes Developed' },
+          { id: 'nba623-patent',      label: 'Patent' },
+        ],
+      },
     ],
   },
 ];
@@ -108,6 +128,8 @@ const VIEW_LABELS = {
   'nba62-journal':    '6.2 Journal Publications',
   'nba62-conference': '6.2 Conference Publications',
   'nba62-book':       '6.2 Book / Book Chapter Publications',
+  'nba623-faculty-dev': '6.2.3 Faculty Developmental Activities (Working Models & Prototypes Developed)',
+  'nba623-patent':      '6.2.3 Faculty Developmental Activities (Patent)',
 };
 
 // ── Recursive sidebar menu item ───────────────────────────────────────────────
@@ -231,6 +253,8 @@ function App() {
   const [selectedNba62JournalDoc, setSelectedNba62JournalDoc]       = useState(null);
   const [selectedNba62ConferenceDoc, setSelectedNba62ConferenceDoc] = useState(null);
   const [selectedNba62BookDoc, setSelectedNba62BookDoc]             = useState(null);
+  // ── 6.2.3 state ──────────────────────────────
+  const [selectedNba623FacultyDevDoc, setSelectedNba623FacultyDevDoc] = useState(null);
 
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
@@ -257,6 +281,7 @@ function App() {
     setSelectedNba62JournalDoc(null);
     setSelectedNba62ConferenceDoc(null);
     setSelectedNba62BookDoc(null);
+    setSelectedNba623FacultyDevDoc(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -561,6 +586,28 @@ function App() {
                 onSelect={(doc) => setSelectedNba62BookDoc(doc)}
               />
             )
+          )}
+
+          {/* ─── 6.2.3 Faculty Developmental Activities ─── */}
+          {activeView === 'nba623-faculty-dev' && (
+            selectedNba623FacultyDevDoc ? (
+              <Nba623FacultyDevDetail
+                parentDocId={selectedNba623FacultyDevDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedNba623FacultyDevDoc.yearLabel}
+                onBack={() => setSelectedNba623FacultyDevDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="nba623FacultyDev"
+                iconClass="bi-tools"
+                onSelect={(doc) => setSelectedNba623FacultyDevDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── 6.2.3 Patent ─── */}
+          {activeView === 'nba623-patent' && (
+            <Nba623PatentDetail />
           )}
 
         </main>

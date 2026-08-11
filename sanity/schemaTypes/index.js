@@ -43,6 +43,13 @@ import {cepUpload_hackathon} from './cepUpload_hackathon'
 import {cepData_hackathon} from './cepData_hackathon'
 import {cepUpload_abl} from './cepUpload_abl'
 import {cepData_abl} from './cepData_abl'
+// ── NBA 6.2 — Journal / Conference / Book ─────────────────────────────────────
+import {nba62Journal} from './nba62Journal'
+import {nba62JournalData} from './nba62JournalData'
+import {nba62Conference} from './nba62Conference'
+import {nba62ConferenceData} from './nba62ConferenceData'
+import {nba62Book} from './nba62Book'
+import {nba62BookData} from './nba62BookData'
 
 export const schemaTypes = [
   nbaIct,
@@ -83,4 +90,8 @@ export const schemaTypes = [
   cepUpload_idp,   cepData_idp,
   cepUpload_hackathon, cepData_hackathon,
   cepUpload_abl,   cepData_abl,
+  // NBA 6.2
+  nba62Journal,    nba62JournalData,
+  nba62Conference, nba62ConferenceData,
+  nba62Book,       nba62BookData,
 ]

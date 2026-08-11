@@ -1927,6 +1927,30 @@ export const csvImporterPlugin = definePlugin({
           return action
         })
       }
+      // 6.2 Journal
+      if (context.schemaType === 'nba62Journal') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportNba62JournalAction
+          if (action.action === 'delete') return DeleteAndCleanupNba62JournalAction
+          return action
+        })
+      }
+      // 6.2 Conference
+      if (context.schemaType === 'nba62Conference') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportNba62ConferenceAction
+          if (action.action === 'delete') return DeleteAndCleanupNba62ConferenceAction
+          return action
+        })
+      }
+      // 6.2 Book
+      if (context.schemaType === 'nba62Book') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportNba62BookAction
+          if (action.action === 'delete') return DeleteAndCleanupNba62BookAction
+          return action
+        })
+      }
       return prev
     },
   },
@@ -2668,6 +2692,647 @@ function DeleteAndCleanupScopusAction({id, type}) {
         title: 'Failed to delete associated Scopus data',
         description: err.message,
       })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
+// ==================== CSV PARSING — 6.2 JOURNAL ====================
+// Columns: S.No | Faculty Name | Co-Authors | Paper Title | Journal Name
+//          | Type of Journal (SCI/SCIE/SCOPUS) | Published Month/Year
+//          | Volume Number | Issue Number | Page Number | DOI Link | Quartile Rank
+function parseNba62JournalCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const facultyName = stripInvisible(cols[1] || '')
+    if (!facultyName) continue // must have faculty name
+
+    rows.push({
+      sNo:               parseInt(cols[0], 10) || null,
+      facultyName,
+      coAuthors:         stripInvisible(cols[2] || ''),
+      paperTitle:        stripInvisible(cols[3] || ''),
+      journalName:       stripInvisible(cols[4] || ''),
+      typeOfJournal:     stripInvisible(cols[5] || ''),
+      publishedMonthYear:stripInvisible(cols[6] || ''),
+      volumeNumber:      stripInvisible(cols[7] || ''),
+      issueNumber:       stripInvisible(cols[8] || ''),
+      pageNumber:        stripInvisible(cols[9] || ''),
+      doiLink:           stripInvisible(cols[10] || ''),
+      quartileRank:      stripInvisible(cols[11] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — 6.2 JOURNAL ====================
+function PublishAndImportNba62JournalAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing 6.2 Journal document...'})
+
+    setTimeout(async () => {
+      try {
+        const doc = await client.fetch(
+          `*[_type == "nba62Journal" && _id == $docId][0]{
+            _id, csvAssetId, dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({status: 'success', title: 'Published', description: 'No CSV file attached — nothing to import.'})
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({status: 'success', title: 'Published! CSV already up to date.', description: `${doc.dataCount} records already imported.`})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing 6.2 Journal CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseNba62JournalCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "nba62JournalData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} 6.2 Journal records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'nba62JournalData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:                row.sNo,
+              facultyName:        row.facultyName,
+              coAuthors:          row.coAuthors || undefined,
+              paperTitle:         row.paperTitle || undefined,
+              journalName:        row.journalName || undefined,
+              typeOfJournal:      row.typeOfJournal || undefined,
+              publishedMonthYear: row.publishedMonthYear || undefined,
+              volumeNumber:       row.volumeNumber || undefined,
+              issueNumber:        row.issueNumber || undefined,
+              pageNumber:         row.pageNumber || undefined,
+              doiLink:            row.doiLink || undefined,
+              quartileRank:       row.quartileRank || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client.patch(docId).set({
+          dataCount: rows.length,
+          csvAssetId: assetId,
+          csvImportedAt: new Date().toISOString(),
+        }).commit()
+
+        toast.push({status: 'success', title: `✅ Published & imported ${rows.length} 6.2 Journal records!`})
+      } catch (err) {
+        console.error('6.2 Journal CSV import error:', err)
+        toast.push({status: 'error', title: '6.2 Journal CSV import failed', description: err.message})
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — 6.2 JOURNAL ====================
+function DeleteAndCleanupNba62JournalAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+    if (!window.confirm('Are you sure? This will delete the 6.2 Journal document AND ALL associated data records. This cannot be undone.')) return
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up 6.2 Journal data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "nba62JournalData" && parent._ref == $docId]._id',
+        {docId}
+      )
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+      deleteOp.execute()
+      toast.push({status: 'success', title: 'Successfully deleted 6.2 Journal document and all its data.'})
+    } catch (err) {
+      console.error('6.2 Journal delete error:', err)
+      toast.push({status: 'error', title: 'Failed to delete 6.2 Journal data', description: err.message})
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
+// ==================== CSV PARSING — 6.2 CONFERENCE ====================
+// Columns: S.No | Faculty Name | Authors | Paper Title | Conference Name | Venue | Published Month/Year | Link
+function parseNba62ConferenceCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const facultyName = stripInvisible(cols[1] || '')
+    if (!facultyName) continue
+
+    rows.push({
+      sNo:               parseInt(cols[0], 10) || null,
+      facultyName,
+      authors:           stripInvisible(cols[2] || ''),
+      paperTitle:        stripInvisible(cols[3] || ''),
+      conferenceName:    stripInvisible(cols[4] || ''),
+      venue:             stripInvisible(cols[5] || ''),
+      publishedMonthYear:stripInvisible(cols[6] || ''),
+      link:              stripInvisible(cols[7] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — 6.2 CONFERENCE ====================
+function PublishAndImportNba62ConferenceAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing 6.2 Conference document...'})
+
+    setTimeout(async () => {
+      try {
+        const doc = await client.fetch(
+          `*[_type == "nba62Conference" && _id == $docId][0]{
+            _id, csvAssetId, dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({status: 'success', title: 'Published', description: 'No CSV file attached — nothing to import.'})
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({status: 'success', title: 'Published! CSV already up to date.', description: `${doc.dataCount} records already imported.`})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing 6.2 Conference CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseNba62ConferenceCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "nba62ConferenceData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} 6.2 Conference records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'nba62ConferenceData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:                row.sNo,
+              facultyName:        row.facultyName,
+              authors:            row.authors || undefined,
+              paperTitle:         row.paperTitle || undefined,
+              conferenceName:     row.conferenceName || undefined,
+              venue:              row.venue || undefined,
+              publishedMonthYear: row.publishedMonthYear || undefined,
+              link:               row.link || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client.patch(docId).set({
+          dataCount: rows.length,
+          csvAssetId: assetId,
+          csvImportedAt: new Date().toISOString(),
+        }).commit()
+
+        toast.push({status: 'success', title: `✅ Published & imported ${rows.length} 6.2 Conference records!`})
+      } catch (err) {
+        console.error('6.2 Conference CSV import error:', err)
+        toast.push({status: 'error', title: '6.2 Conference CSV import failed', description: err.message})
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — 6.2 CONFERENCE ====================
+function DeleteAndCleanupNba62ConferenceAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+    if (!window.confirm('Are you sure? This will delete the 6.2 Conference document AND ALL associated data records. This cannot be undone.')) return
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up 6.2 Conference data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "nba62ConferenceData" && parent._ref == $docId]._id',
+        {docId}
+      )
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+      deleteOp.execute()
+      toast.push({status: 'success', title: 'Successfully deleted 6.2 Conference document and all its data.'})
+    } catch (err) {
+      console.error('6.2 Conference delete error:', err)
+      toast.push({status: 'error', title: 'Failed to delete 6.2 Conference data', description: err.message})
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, docId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '🗑️',
+  }
+}
+
+// ==================== CSV PARSING — 6.2 BOOK ====================
+// Columns: S.No | Faculty Name | Authors | Paper Title | Title of the Book/Book Chapter | Published Month/Year | Link
+function parseNba62BookCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+  const rows = []
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const facultyName = stripInvisible(cols[1] || '')
+    if (!facultyName) continue
+
+    rows.push({
+      sNo:               parseInt(cols[0], 10) || null,
+      facultyName,
+      authors:           stripInvisible(cols[2] || ''),
+      paperTitle:        stripInvisible(cols[3] || ''),
+      bookTitle:         stripInvisible(cols[4] || ''),
+      publishedMonthYear:stripInvisible(cols[5] || ''),
+      link:              stripInvisible(cols[6] || ''),
+    })
+  }
+
+  return rows
+}
+
+// ==================== CUSTOM PUBLISH + IMPORT ACTION — 6.2 BOOK ====================
+function PublishAndImportNba62BookAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing 6.2 Book document...'})
+
+    setTimeout(async () => {
+      try {
+        const doc = await client.fetch(
+          `*[_type == "nba62Book" && _id == $docId][0]{
+            _id, csvAssetId, dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {docId}
+        )
+
+        if (!doc?.csv?.asset?.url) {
+          toast.push({status: 'success', title: 'Published', description: 'No CSV file attached — nothing to import.'})
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = doc.csv.asset._id
+        if (doc.csvAssetId === assetId && (doc.dataCount || 0) > 0) {
+          toast.push({status: 'success', title: 'Published! CSV already up to date.', description: `${doc.dataCount} records already imported.`})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing 6.2 Book CSV...'})
+        const response = await fetch(doc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseNba62BookCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "nba62BookData" && parent._ref == $docId]._id',
+          {docId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((rowId) => tx.delete(rowId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} 6.2 Book records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'nba62BookData',
+              parent: {_type: 'reference', _ref: docId, _weak: true},
+              sNo:                row.sNo,
+              facultyName:        row.facultyName,
+              authors:            row.authors || undefined,
+              paperTitle:         row.paperTitle || undefined,
+              bookTitle:          row.bookTitle || undefined,
+              publishedMonthYear: row.publishedMonthYear || undefined,
+              link:               row.link || undefined,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client.patch(docId).set({
+          dataCount: rows.length,
+          csvAssetId: assetId,
+          csvImportedAt: new Date().toISOString(),
+        }).commit()
+
+        toast.push({status: 'success', title: `✅ Published & imported ${rows.length} 6.2 Book records!`})
+      } catch (err) {
+        console.error('6.2 Book CSV import error:', err)
+        toast.push({status: 'error', title: '6.2 Book CSV import failed', description: err.message})
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, docId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== CUSTOM DELETE ACTION — 6.2 BOOK ====================
+function DeleteAndCleanupNba62BookAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const docId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+    if (!window.confirm('Are you sure? This will delete the 6.2 Book document AND ALL associated data records. This cannot be undone.')) return
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up 6.2 Book data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "nba62BookData" && parent._ref == $docId]._id',
+        {docId}
+      )
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((rowId) => tx.delete(rowId))
+          await tx.commit()
+        }
+      }
+      deleteOp.execute()
+      toast.push({status: 'success', title: 'Successfully deleted 6.2 Book document and all its data.'})
+    } catch (err) {
+      console.error('6.2 Book delete error:', err)
+      toast.push({status: 'error', title: 'Failed to delete 6.2 Book data', description: err.message})
     } finally {
       setIsDeleting(false)
     }

@@ -20,6 +20,9 @@ import IndustrialInvolvementDetail from './components/IndustrialInvolvementDetai
 import GuestLectureDetail from './components/GuestLectureDetail';
 import StrategiesCepView from './components/StrategiesCepView';
 import CoCurricularSdgDetail from './components/CoCurricularSdgDetail';
+import Nba62JournalDetail from './components/Nba62JournalDetail';
+import Nba62ConferenceDetail from './components/Nba62ConferenceDetail';
+import Nba62BookDetail from './components/Nba62BookDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -67,13 +70,20 @@ const MENU_STRUCTURE = [
   {
     id: '2.7', label: '2.7', children: [
       { id: 'cea-strategies', label: 'Strategies Employed to Solve Complex Engineering Problems' },
-      { id: 'csea', label: 'CSEA', url: 'https://csea-website-d5dv.vercel.app/' },
+      { id: 'csea', label: 'Initiatives by the department achieving the Sustainable Development Goals (SDGs)', url: 'https://csea-website-d5dv.vercel.app/' },
     ],
   },
   {
     id: '2.8', label: '2.8', children: [
       { id: 'industrial-involvement', label: 'A) Industrial involvement' },
       { id: 'guest-lecture', label: 'B) Guest Lecture' },
+    ],
+  },
+  {
+    id: '6.2', label: '6.2', children: [
+      { id: 'nba62-journal',    label: 'Journal' },
+      { id: 'nba62-conference', label: 'Conference' },
+      { id: 'nba62-book',       label: 'Book' },
     ],
   },
 ];
@@ -95,6 +105,9 @@ const VIEW_LABELS = {
   'cea-strategies': 'Strategies Employed to Solve Complex Engineering Problems',
   'industrial-involvement': 'Industrial involvement in partial delivery of regular courses',
   'guest-lecture': 'Guest Lecture',
+  'nba62-journal':    '6.2 Journal Publications',
+  'nba62-conference': '6.2 Conference Publications',
+  'nba62-book':       '6.2 Book / Book Chapter Publications',
 };
 
 // ── Recursive sidebar menu item ───────────────────────────────────────────────
@@ -214,6 +227,11 @@ function App() {
   // ── Seminar state ─────────────────────────────────────────────────────
   const [selectedSeminarDoc, setSelectedSeminarDoc] = useState(null);
 
+  // ── 6.2 state ─────────────────────────────────────────────────
+  const [selectedNba62JournalDoc, setSelectedNba62JournalDoc]       = useState(null);
+  const [selectedNba62ConferenceDoc, setSelectedNba62ConferenceDoc] = useState(null);
+  const [selectedNba62BookDoc, setSelectedNba62BookDoc]             = useState(null);
+
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -236,6 +254,9 @@ function App() {
     setSelectedFreelancingDoc(null);
     setSelectedPlacementDoc(null);
     setSelectedSeminarDoc(null);
+    setSelectedNba62JournalDoc(null);
+    setSelectedNba62ConferenceDoc(null);
+    setSelectedNba62BookDoc(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -489,6 +510,57 @@ function App() {
           {/* ─── Guest Lecture ─── */}
           {activeView === 'guest-lecture' && (
             <GuestLectureDetail />
+          )}
+
+          {/* ─── 6.2 Journal ─── */}
+          {activeView === 'nba62-journal' && (
+            selectedNba62JournalDoc ? (
+              <Nba62JournalDetail
+                parentDocId={selectedNba62JournalDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedNba62JournalDoc.yearLabel}
+                onBack={() => setSelectedNba62JournalDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="nba62Journal"
+                iconClass="bi-journal-text"
+                onSelect={(doc) => setSelectedNba62JournalDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── 6.2 Conference ─── */}
+          {activeView === 'nba62-conference' && (
+            selectedNba62ConferenceDoc ? (
+              <Nba62ConferenceDetail
+                parentDocId={selectedNba62ConferenceDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedNba62ConferenceDoc.yearLabel}
+                onBack={() => setSelectedNba62ConferenceDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="nba62Conference"
+                iconClass="bi-mic"
+                onSelect={(doc) => setSelectedNba62ConferenceDoc(doc)}
+              />
+            )
+          )}
+
+          {/* ─── 6.2 Book ─── */}
+          {activeView === 'nba62-book' && (
+            selectedNba62BookDoc ? (
+              <Nba62BookDetail
+                parentDocId={selectedNba62BookDoc._id.replace(/^drafts\./, '')}
+                yearLabel={selectedNba62BookDoc.yearLabel}
+                onBack={() => setSelectedNba62BookDoc(null)}
+              />
+            ) : (
+              <GenericYearList
+                docType="nba62Book"
+                iconClass="bi-book"
+                onSelect={(doc) => setSelectedNba62BookDoc(doc)}
+              />
+            )
           )}
 
         </main>

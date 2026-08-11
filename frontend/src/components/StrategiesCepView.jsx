@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { client } from '../lib/sanityClient';
 
 // ── Strategy definitions ───────────────────────────────────────────────────────
 const STRATEGIES = [
@@ -292,13 +293,20 @@ function StrategiesCepView() {
       const newCache = {};
       await Promise.all(
         STRATEGIES.map(async (s) => {
-          const res = await fetch(`/api/cep/${s.key}`);
-          if (res.ok) {
-            const json = await res.json();
-            newCache[s.key] = json.data || [];
-          } else {
-            newCache[s.key] = [];
-          }
+          const query = `*[_type == $dataType] | order(sNo asc) {
+            _id,
+            sNo,
+            courseCodeTitle,
+            learningActivity,
+            studentTeam,
+            hackathonProblem,
+            organizedBy,
+            complexProblem,
+            sdg,
+            link
+          }`;
+          const data = await client.fetch(query, { dataType: s.dataType });
+          newCache[s.key] = data || [];
         })
       );
       setDataCache(newCache);

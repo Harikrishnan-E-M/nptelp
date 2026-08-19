@@ -54,7 +54,7 @@ function NbaIctDetail() {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading ICT tools data...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   const displayedRows = getDisplayedRows();

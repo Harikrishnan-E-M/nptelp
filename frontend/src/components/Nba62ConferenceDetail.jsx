@@ -57,7 +57,7 @@ function Nba62ConferenceDetail({ parentDocId, yearLabel, onBack }) {
     return sorted;
   };
 
-  if (loading) return <div className="alert alert-info">Loading 6.2 Conference data...</div>;
+  if (loading) return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
 
   const sortedRows = getSortedRows();
 

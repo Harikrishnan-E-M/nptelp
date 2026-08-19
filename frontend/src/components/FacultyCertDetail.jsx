@@ -163,7 +163,7 @@ function FacultyCertDetail({ docId, yearLabel, onBack }) {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading faculty data...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   const sortedRows = getSortedRows();

@@ -37,7 +37,7 @@ function FacultyCertYearList({ onSelect }) {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading faculty certification years...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   return (

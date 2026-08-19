@@ -151,10 +151,8 @@ function StrategyTable({ strategy, rows }) {
 
   if (rows.length === 0) {
     return (
-      <div className="alert alert-info" style={{ marginTop: '1rem' }}>
-        <i className="bi bi-info-circle me-2" />
-        No data yet for <strong>{strategy.label}</strong>. Upload a CSV via Sanity Studio
-        under <em>CEP Upload — {strategy.label}</em>.
+      <div className="cse-loader-container">
+        <div className="cse-loader-text">CSE</div>
       </div>
     );
   }
@@ -340,7 +338,7 @@ function StrategiesCepView() {
       {loading && (
         <div className="alert alert-info mb-4 d-flex align-items-center gap-2">
           <div className="spinner-border spinner-border-sm" role="status"></div>
-          <span>Loading strategies data...</span>
+          <span className="cse-loader-text" style={{fontSize:"1.5rem"}}>CSE</span>
         </div>
       )}
 

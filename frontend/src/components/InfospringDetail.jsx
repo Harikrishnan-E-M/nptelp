@@ -111,9 +111,8 @@ function InfospringDetail({ yearId, yearLabel, onBack }) {
 
   if (loading) {
     return (
-      <div className="alert alert-info d-flex align-items-center gap-2">
-        <div className="spinner-border spinner-border-sm" role="status" />
-        <span>Loading coordinator data...</span>
+      <div className="cse-loader-container">
+        <div className="cse-loader-text">CSE</div>
       </div>
     );
   }
@@ -427,9 +426,8 @@ function CoordCard({ coord, brandColor, brandGradient, brandLight, onClick }) {
 function StudentTable({ rows, brandColor }) {
   if (rows.length === 0) {
     return (
-      <div className="alert alert-info">
-        <i className="bi bi-search me-2" />
-        No matching students found.
+      <div className="cse-loader-container">
+        <div className="cse-loader-text">CSE</div>
       </div>
     );
   }

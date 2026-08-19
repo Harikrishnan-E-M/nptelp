@@ -61,7 +61,7 @@ function PlacementInternshipDetail({ parentDocId, onBack, yearLabel }) {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading placement internship data...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   const sortedRows = getSortedRows();

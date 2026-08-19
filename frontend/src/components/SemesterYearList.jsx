@@ -39,7 +39,7 @@ function SemesterYearList({ docType, onSelect }) {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   return (

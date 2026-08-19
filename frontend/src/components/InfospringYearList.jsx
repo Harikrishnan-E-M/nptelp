@@ -37,9 +37,8 @@ function InfospringYearList({ onSelect }) {
 
   if (loading) {
     return (
-      <div className="alert alert-info d-flex align-items-center gap-2">
-        <div className="spinner-border spinner-border-sm" role="status" />
-        <span>Loading years...</span>
+      <div className="cse-loader-container">
+        <div className="cse-loader-text">CSE</div>
       </div>
     );
   }

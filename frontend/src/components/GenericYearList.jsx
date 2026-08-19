@@ -38,7 +38,7 @@ function GenericYearList({ docType, iconClass, onSelect }) {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading years...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   return (

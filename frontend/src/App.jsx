@@ -86,6 +86,15 @@ const MENU_STRUCTURE = [
     ],
   },
   {
+    id: '4', label: '4', children: [
+      {
+        id: 'newsletter',
+        label: 'Newsletter',
+        url: 'https://drive.google.com/drive/folders/1NKdoy7-WLj6wpu2ly_eVOketsr0w69o3?usp=sharing',
+      },
+    ],
+  },
+  {
     id: '6.1', label: '6.1', children: [
       {
         id: '6.1.3', label: '6.1.3', children: [

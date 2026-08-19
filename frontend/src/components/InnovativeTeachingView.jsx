@@ -823,7 +823,7 @@ function InnovativeTeachingView({ menuLabel = 'Innovative Teaching Activity' }) 
     }
   };
 
-  if (loading) return <div className="alert alert-info">Loading...</div>;
+  if (loading) return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   if (error) return <div className="alert alert-danger">{error}</div>;
 
   if (selectedDoc) {

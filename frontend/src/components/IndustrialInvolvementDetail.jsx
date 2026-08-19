@@ -73,7 +73,7 @@ function IndustrialInvolvementDetail() {
   };
 
   if (loading) {
-    return <div className="alert alert-info">Loading industrial involvement data...</div>;
+    return <div className="cse-loader-container"><div className="cse-loader-text">CSE</div></div>;
   }
 
   const displayedRows = getDisplayedRows();

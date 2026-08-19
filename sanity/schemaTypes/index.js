@@ -55,6 +55,10 @@ import {nba623FacultyDev} from './nba623FacultyDev'
 import {nba623FacultyDevData} from './nba623FacultyDevData'
 import {nba623Patent} from './nba623Patent'
 import {nba623PatentData} from './nba623PatentData'
+// ── Infosys Springboard Certification ─────────────────────────────────────────
+import {infospringYear} from './infospringYear'
+import {infospringCoord} from './infospringCoord'
+import {infospringData} from './infospringData'
 
 export const schemaTypes = [
   nbaIct,
@@ -102,4 +106,8 @@ export const schemaTypes = [
   // NBA 6.2.3
   nba623FacultyDev, nba623FacultyDevData,
   nba623Patent,     nba623PatentData,
+  // Infosys Springboard
+  infospringYear,
+  infospringCoord,
+  infospringData,
 ]

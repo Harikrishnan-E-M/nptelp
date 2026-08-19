@@ -25,6 +25,8 @@ import Nba62ConferenceDetail from './components/Nba62ConferenceDetail';
 import Nba62BookDetail from './components/Nba62BookDetail';
 import Nba623FacultyDevDetail from './components/Nba623FacultyDevDetail';
 import Nba623PatentDetail from './components/Nba623PatentDetail';
+import InfospringYearList from './components/InfospringYearList';
+import InfospringDetail from './components/InfospringDetail';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -66,6 +68,7 @@ const MENU_STRUCTURE = [
         ],
       },
       { id: 'non-formal', label: 'Non Formal' },
+      { id: 'infosys-springboard', label: 'Infosys Springboard Certification' },
     ],
   },
   {
@@ -130,6 +133,7 @@ const VIEW_LABELS = {
   'nba62-book':       '6.2 Book / Book Chapter Publications',
   'nba623-faculty-dev': '6.2.3 Faculty Developmental Activities (Working Models & Prototypes Developed)',
   'nba623-patent':      '6.2.3 Faculty Developmental Activities (Patent)',
+  'infosys-springboard': 'Infosys Springboard Certification',
 };
 
 // ── Recursive sidebar menu item ───────────────────────────────────────────────
@@ -256,6 +260,9 @@ function App() {
   // ── 6.2.3 state ──────────────────────────────
   const [selectedNba623FacultyDevDoc, setSelectedNba623FacultyDevDoc] = useState(null);
 
+  // ── Infosys Springboard state ──────────────────────────────────
+  const [selectedInfospringYear, setSelectedInfospringYear] = useState(null);
+
   const toggleGroup = (id) => {
     setOpenGroups(prev => {
       const next = new Set(prev);
@@ -282,6 +289,7 @@ function App() {
     setSelectedNba62ConferenceDoc(null);
     setSelectedNba62BookDoc(null);
     setSelectedNba623FacultyDevDoc(null);
+    setSelectedInfospringYear(null);
   };
 
   const currentLabel = activeView ? VIEW_LABELS[activeView] : null;
@@ -608,6 +616,21 @@ function App() {
           {/* ─── 6.2.3 Patent ─── */}
           {activeView === 'nba623-patent' && (
             <Nba623PatentDetail />
+          )}
+
+          {/* ─── Infosys Springboard Certification ─── */}
+          {activeView === 'infosys-springboard' && (
+            <>
+              {!selectedInfospringYear ? (
+                <InfospringYearList onSelect={setSelectedInfospringYear} />
+              ) : (
+                <InfospringDetail
+                  yearId={selectedInfospringYear._id.replace(/^drafts\./, '')}
+                  yearLabel={selectedInfospringYear.yearLabel}
+                  onBack={() => setSelectedInfospringYear(null)}
+                />
+              )}
+            </>
           )}
 
         </main>

@@ -1967,6 +1967,14 @@ export const csvImporterPlugin = definePlugin({
           return action
         })
       }
+      // Infosys Springboard Certification — coordinator (CSV import + cascade delete)
+      if (context.schemaType === 'infospringCoord') {
+        return prev.map((action) => {
+          if (action.action === 'publish') return PublishAndImportInfospringAction
+          if (action.action === 'delete') return DeleteAndCleanupInfospringAction
+          return action
+        })
+      }
       return prev
     },
   },
@@ -5043,3 +5051,249 @@ const PublishAndImportCepAblAction = makeCepPublishAction({
   }),
 })
 const DeleteAndCleanupCepAblAction = makeCepDeleteAction({dataType: 'cepData_abl', label: 'Activity Based Learning'})
+
+// ==================== CSV PARSING — INFOSYS SPRINGBOARD ====================
+// Expected columns: Register Number | Name | Certificates Drive Link
+// Row 0 is the header and is skipped.
+function parseInfospringCsvText(csvText) {
+  const cleanText = csvText.replace(/^\uFEFF/, '').replace(/^\u00EF\u00BB\u00BF/, '')
+  const lines = cleanText.split(/\r?\n/)
+  lines.shift() // remove header row
+
+  const stripInvisible = (str) =>
+    str.replace(/^[\uFEFF\u200B\u200C\u200D\u00A0\u202F\u2060\u3000]+/, '').trim()
+
+  const rows = []
+  let sNo = 1
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    const cols = []
+    let cur = ''
+    let q = false
+
+    for (const ch of line) {
+      if (ch === '"') q = !q
+      else if (ch === ',' && !q) {
+        cols.push(stripInvisible(cur))
+        cur = ''
+      } else {
+        cur += ch
+      }
+    }
+    cols.push(stripInvisible(cur))
+
+    const registerNumber = stripInvisible(cols[0] || '')
+    const name = stripInvisible(cols[1] || '')
+    if (!name && !registerNumber) continue
+
+    rows.push({
+      sNo: sNo++,
+      registerNumber,
+      name,
+      certDriveLink: stripInvisible(cols[2] || '') || undefined,
+    })
+  }
+
+  return rows
+}
+
+// ==================== PUBLISH + IMPORT ACTION — INFOSYS SPRINGBOARD ====================
+function PublishAndImportInfospringAction({id, type}) {
+  const {publish} = useDocumentOperation(id, type)
+  const [isRunning, setIsRunning] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const coordId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(() => {
+    if (publish.disabled || isRunning) return
+
+    publish.execute()
+    setIsRunning(true)
+    toast.push({status: 'info', title: 'Publishing Infosys Springboard document...'})
+
+    setTimeout(async () => {
+      try {
+        toast.push({status: 'info', title: 'Checking CSV file...'})
+
+        const coordDoc = await client.fetch(
+          `*[_type == "infospringCoord" && _id == $coordId][0]{
+            _id,
+            csvAssetId,
+            dataCount,
+            "csv": csvFile{asset->{_id, url}}
+          }`,
+          {coordId}
+        )
+
+        if (!coordDoc?.csv?.asset?.url) {
+          toast.push({
+            status: 'success',
+            title: 'Published successfully',
+            description: 'No CSV file attached — nothing to import.',
+          })
+          setIsRunning(false)
+          return
+        }
+
+        const assetId = coordDoc.csv.asset._id
+
+        if (coordDoc.csvAssetId === assetId && (coordDoc.dataCount || 0) > 0) {
+          toast.push({
+            status: 'success',
+            title: 'Published! CSV already up to date.',
+            description: `${coordDoc.dataCount} student records already imported from this file.`,
+          })
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: 'Downloading & parsing Infosys Springboard CSV...'})
+        const response = await fetch(coordDoc.csv.asset.url)
+        if (!response.ok) throw new Error('Failed to download CSV')
+        const csvText = await response.text()
+        const rows = parseInfospringCsvText(csvText)
+
+        if (rows.length === 0) {
+          toast.push({status: 'warning', title: 'Published but CSV has no valid rows'})
+          setIsRunning(false)
+          return
+        }
+
+        toast.push({status: 'info', title: `Found ${rows.length} rows. Deleting old data...`})
+
+        const existingIds = await client.fetch(
+          '*[_type == "infospringData" && coordinator._ref == $coordId]._id',
+          {coordId}
+        )
+        if (existingIds.length > 0) {
+          const batchSize = 100
+          for (let i = 0; i < existingIds.length; i += batchSize) {
+            const batch = existingIds.slice(i, i + batchSize)
+            const tx = client.transaction()
+            batch.forEach((docId) => tx.delete(docId))
+            await tx.commit()
+          }
+        }
+
+        toast.push({status: 'info', title: `Creating ${rows.length} student records...`})
+
+        const batchSize = 100
+        for (let i = 0; i < rows.length; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((row) => {
+            tx.create({
+              _type: 'infospringData',
+              coordinator: {_type: 'reference', _ref: coordId, _weak: true},
+              sNo: row.sNo,
+              registerNumber: row.registerNumber,
+              name: row.name,
+              certDriveLink: row.certDriveLink,
+            })
+          })
+          await tx.commit()
+        }
+
+        await client
+          .patch(coordId)
+          .set({
+            dataCount: rows.length,
+            csvAssetId: assetId,
+            csvImportedAt: new Date().toISOString(),
+          })
+          .commit()
+
+        toast.push({
+          status: 'success',
+          title: `\u2705 Published & imported ${rows.length} student records!`,
+          description: 'Data is now live on the frontend.',
+        })
+      } catch (err) {
+        console.error('Infosys Springboard CSV import error:', err)
+        toast.push({
+          status: 'error',
+          title: 'Infosys Springboard CSV import failed (document is still published)',
+          description: err.message,
+        })
+      } finally {
+        setIsRunning(false)
+      }
+    }, 2000)
+  }, [publish, isRunning, client, coordId, toast])
+
+  return {
+    label: isRunning ? 'Publishing & importing CSV...' : 'Publish',
+    disabled: !!publish.disabled || isRunning,
+    onHandle,
+    tone: 'primary',
+    shortcut: 'Ctrl+Alt+P',
+  }
+}
+
+// ==================== DELETE ACTION — INFOSYS SPRINGBOARD ====================
+function DeleteAndCleanupInfospringAction({id, type}) {
+  const {delete: deleteOp} = useDocumentOperation(id, type)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const client = useClient({apiVersion: '2024-01-30'})
+  const toast = useToast()
+
+  const coordId = id.replace(/^drafts\./, '')
+
+  const onHandle = useCallback(async () => {
+    if (deleteOp.disabled || isDeleting) return
+
+    if (!window.confirm('Are you sure? This will delete this coordinator document AND ALL associated student data records. This cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    toast.push({status: 'info', title: 'Cleaning up Infosys Springboard student data...'})
+
+    try {
+      const existingIds = await client.fetch(
+        '*[_type == "infospringData" && coordinator._ref == $coordId]._id',
+        {coordId}
+      )
+
+      if (existingIds.length > 0) {
+        toast.push({status: 'info', title: `Deleting ${existingIds.length} student records...`})
+        const batchSize = 100
+        for (let i = 0; i < existingIds.length; i += batchSize) {
+          const batch = existingIds.slice(i, i + batchSize)
+          const tx = client.transaction()
+          batch.forEach((docId) => tx.delete(docId))
+          await tx.commit()
+        }
+      }
+
+      toast.push({status: 'info', title: 'Deleting coordinator document...'})
+      deleteOp.execute()
+
+      toast.push({
+        status: 'success',
+        title: 'Successfully deleted coordinator and all student data.',
+      })
+    } catch (err) {
+      console.error('Infosys Springboard delete cleanup error:', err)
+      toast.push({
+        status: 'error',
+        title: 'Failed to delete associated student data',
+        description: err.message,
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteOp, isDeleting, client, coordId, toast])
+
+  return {
+    label: isDeleting ? 'Deleting data...' : 'Delete with all data',
+    disabled: !!deleteOp.disabled || isDeleting,
+    onHandle,
+    tone: 'critical',
+    icon: () => '\uD83D\uDDD1\uFE0F',
+  }
+}
+

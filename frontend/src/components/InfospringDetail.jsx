@@ -383,10 +383,10 @@ function CoordCard({ coord, brandColor, brandGradient, brandLight, onClick }) {
 
         {/* Right: details */}
         <div style={{ flex: 1, minWidth: 260 }}>
-          {/* Coordinator name + student count badge */}
+          {/* Springboard title (primary) + student count badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
             <h5 style={{ margin: 0, color: '#1e293b', fontWeight: 700, fontSize: '1.05rem' }}>
-              {sanitize(coord.coordinatorName) || '—'}
+              {sanitize(coord.courseTitleSpringboard) || '—'}
             </h5>
             <span
               style={{
@@ -405,12 +405,12 @@ function CoordCard({ coord, brandColor, brandGradient, brandLight, onClick }) {
 
           {/* Course info grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0 2rem' }}>
-            <InfoRow icon="bi-hash"          label="Course Code"       value={sanitize(coord.courseCode)} />
+            <InfoRow icon="bi-hash"          label="Course Code"        value={sanitize(coord.courseCode)} />
             <InfoRow icon="bi-book"          label="Course (Curriculum)" value={sanitize(coord.courseNameCurriculum)} />
-            <InfoRow icon="bi-mortarboard"   label="Springboard Title"  value={sanitize(coord.courseTitleSpringboard)} />
-            <InfoRow icon="bi-clock"         label="Duration"           value={sanitize(coord.courseDuration)} />
-            <InfoRow icon="bi-envelope"      label="Email"              value={sanitize(coord.coordinatorEmail)} />
-            <InfoRow icon="bi-telephone"     label="Phone"              value={sanitize(coord.coordinatorPhone)} />
+            <InfoRow icon="bi-clock"         label="Duration"            value={sanitize(coord.courseDuration)} />
+            <InfoRow icon="bi-person-badge"  label="Coordinator"         value={sanitize(coord.coordinatorName)} />
+            <InfoRow icon="bi-envelope"      label="Email"               value={sanitize(coord.coordinatorEmail)} />
+            <InfoRow icon="bi-telephone"     label="Phone"               value={sanitize(coord.coordinatorPhone)} />
           </div>
         </div>
 

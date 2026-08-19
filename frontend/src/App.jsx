@@ -27,6 +27,7 @@ import Nba623FacultyDevDetail from './components/Nba623FacultyDevDetail';
 import Nba623PatentDetail from './components/Nba623PatentDetail';
 import InfospringYearList from './components/InfospringYearList';
 import InfospringDetail from './components/InfospringDetail';
+import MatlabView from './components/MatlabView';
 import './App.css';
 
 // ── Menu structure ────────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ const MENU_STRUCTURE = [
       },
       { id: 'non-formal', label: 'Non Formal' },
       { id: 'infosys-springboard', label: 'Infosys Springboard Certification' },
+      { id: 'matlab', label: 'Matlab' },
     ],
   },
   {
@@ -134,6 +136,7 @@ const VIEW_LABELS = {
   'nba623-faculty-dev': '6.2.3 Faculty Developmental Activities (Working Models & Prototypes Developed)',
   'nba623-patent':      '6.2.3 Faculty Developmental Activities (Patent)',
   'infosys-springboard': 'Infosys Springboard Certification',
+  'matlab': 'MATLAB Certification',
 };
 
 // ── Recursive sidebar menu item ───────────────────────────────────────────────
@@ -350,8 +353,8 @@ function App() {
         {/* ── Content Area ─────────────────────────────────────────────── */}
         <main className="content-area">
 
-          {/* Section heading at top-centre */}
-          {currentLabel && (
+          {/* Section heading at top-centre — hidden when InfospringDetail shows its own year heading */}
+          {currentLabel && !(activeView === 'infosys-springboard' && selectedInfospringYear) && (
             <div className="content-heading-bar">
               <h2 className="content-heading">{currentLabel}</h2>
               <div className="content-heading-underline" />
@@ -631,6 +634,11 @@ function App() {
                 />
               )}
             </>
+          )}
+
+          {/* ─── Matlab ─── */}
+          {activeView === 'matlab' && (
+            <MatlabView />
           )}
 
         </main>

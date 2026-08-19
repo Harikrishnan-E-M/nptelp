@@ -109,29 +109,8 @@ function InfospringYearList({ onSelect }) {
                     </p>
                   )}
 
-                  {/* Stat pill */}
-                  <div className="mt-auto">
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        background: '#e8f0fe',
-                        color: '#1a73e8',
-                        borderRadius: 20,
-                        padding: '3px 12px',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        marginBottom: '0.75rem',
-                      }}
-                    >
-                      <i className="bi bi-person-workspace" />
-                      {year.coordCount ?? 0} course coordinator{year.coordCount !== 1 ? 's' : ''}
-                    </div>
-                  </div>
-
                   <button
-                    className="btn btn-sm w-100"
+                    className="btn btn-sm w-100 mt-auto"
                     style={{
                       background: 'linear-gradient(135deg, #0f4c81, #1a73e8)',
                       color: '#fff',

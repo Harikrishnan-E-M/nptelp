@@ -10,6 +10,15 @@ const STATIC_YEAR_TOTALS = {
   '2021-2022': 107,
 };
 
+// Static per-category counts for all years — no DB dependency for summary cards
+const STATIC_YEAR_STATS = {
+  '2025-2026': { eliteGold: 252, eliteSilver: 140, elite: 183, successfullyCompleted: 48  },
+  '2024-2025': { eliteGold: 36,  eliteSilver: 133, elite: 303, successfullyCompleted: 101 },
+  '2023-2024': { eliteGold: 1,   eliteSilver: 120, elite: 334, successfullyCompleted: 73  },
+  '2022-2023': { eliteGold: 0,   eliteSilver: 15,  elite: 89,  successfullyCompleted: 55  },
+  '2021-2022': { eliteGold: 4,   eliteSilver: 24,  elite: 64,  successfullyCompleted: 15  },
+};
+
 function Statistics({ year, onBack }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -273,6 +282,20 @@ function Statistics({ year, onBack }) {
   const courseStats = calculateCourseStats();
   const batchStats = calculateBatchStats();
   const maxBatchTotal = batchStats.length > 0 ? Math.max(...batchStats.map(item => item.total), 1) : 1;
+
+  // Merge static overrides into calculated stats for display in cards
+  // For years with static data, use those values; otherwise fall back to calculated
+  const staticOverride = STATIC_YEAR_STATS[year.yearLabel];
+  const displayStats = calculatedStats
+    ? {
+        ...calculatedStats,
+        total:                  STATIC_YEAR_TOTALS[year.yearLabel] ?? calculatedStats.total,
+        eliteGold:              staticOverride ? staticOverride.eliteGold              : calculatedStats.eliteGold,
+        eliteSilver:            staticOverride ? staticOverride.eliteSilver            : calculatedStats.eliteSilver,
+        elite:                  staticOverride ? staticOverride.elite                  : calculatedStats.elite,
+        successfullyCompleted:  staticOverride ? staticOverride.successfullyCompleted  : calculatedStats.successfullyCompleted,
+      }
+    : null;
   
   const getYearOfStudy = (sem) => {
     const s = parseInt(sem, 10);
@@ -330,31 +353,31 @@ function Statistics({ year, onBack }) {
       )}
 
       {/* Statistics Cards */}
-      {calculatedStats && (
+      {displayStats && (
         <div className="stats-cards-row mb-4">
           <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Total Students</div>
-            <div className="stat-value text-primary">{STATIC_YEAR_TOTALS[year.yearLabel] ?? calculatedStats.total}</div>
+            <div className="stat-value text-primary">{displayStats.total}</div>
             <div className="stat-subtitle">All Batches</div>
           </div>
           <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Elite + Gold</div>
-            <div className="stat-value text-warning">{calculatedStats.eliteGold}</div>
+            <div className="stat-value text-warning">{displayStats.eliteGold}</div>
             <div className="stat-subtitle">Highest Achievers</div>
           </div>
           <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Elite + Silver</div>
-            <div className="stat-value text-info">{calculatedStats.eliteSilver}</div>
+            <div className="stat-value text-info">{displayStats.eliteSilver}</div>
             <div className="stat-subtitle">Silver Medalists</div>
           </div>
           <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Elite</div>
-            <div className="stat-value text-success">{calculatedStats.elite}</div>
+            <div className="stat-value text-success">{displayStats.elite}</div>
             <div className="stat-subtitle">Elite Achievers</div>
           </div>
           <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Successfully Completed</div>
-            <div className="stat-value text-secondary">{calculatedStats.successfullyCompleted}</div>
+            <div className="stat-value text-secondary">{displayStats.successfullyCompleted}</div>
             <div className="stat-subtitle">Score 40–59</div>
           </div>
         </div>

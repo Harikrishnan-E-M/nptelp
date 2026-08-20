@@ -71,6 +71,11 @@ const MENU_STRUCTURE = [
       { id: 'non-formal', label: 'Non Formal' },
       { id: 'infosys-springboard', label: 'Infosys Springboard Certification' },
       { id: 'matlab', label: 'Matlab' },
+      {
+        id: 'global-cert',
+        label: 'Global Certification',
+        url: 'https://drive.google.com/drive/folders/1FK-WMs0OLbUg2RVwLGXSGJbjE2HAtNW5',
+      },
     ],
   },
   {

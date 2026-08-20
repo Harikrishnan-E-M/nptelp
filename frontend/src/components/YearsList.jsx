@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { client } from '../lib/sanityClient';
 
+// Static total counts for Student NPTEL — override dynamic Sanity count
+const STATIC_YEAR_TOTALS = {
+  '2025-2026': 623,
+  '2024-2025': 573,
+  '2023-2024': 528,
+  '2022-2023': 159,
+  '2021-2022': 107,
+};
+
 function YearsList({ onYearSelect }) {
   const [years, setYears] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,11 +70,11 @@ function YearsList({ onYearSelect }) {
 
                   <div className="d-flex gap-3 mb-3 mt-auto">
                     <div className="faculty-stat-pill">
-                      <span className="faculty-stat-label">Total Students</span>
-                      <span className="faculty-stat-value">
-                        {year.totalStudents != null ? year.totalStudents : '0'}
-                      </span>
-                    </div>
+                       <span className="faculty-stat-label">Total Students</span>
+                       <span className="faculty-stat-value">
+                         {STATIC_YEAR_TOTALS[year.yearLabel] ?? (year.totalStudents != null ? year.totalStudents : '0')}
+                       </span>
+                     </div>
                   </div>
 
                   <button

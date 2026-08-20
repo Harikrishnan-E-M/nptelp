@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { client } from '../lib/sanityClient';
 
+// Static total counts for Student NPTEL — override dynamic count in the total card
+const STATIC_YEAR_TOTALS = {
+  '2025-2026': 623,
+  '2024-2025': 573,
+  '2023-2024': 528,
+  '2022-2023': 159,
+  '2021-2022': 107,
+};
+
 function Statistics({ year, onBack }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -325,7 +334,7 @@ function Statistics({ year, onBack }) {
         <div className="stats-cards-row mb-4">
           <div className="stat-card" style={{ cursor: 'default' }}>
             <div className="stat-title">Total Students</div>
-            <div className="stat-value text-primary">{calculatedStats.total}</div>
+            <div className="stat-value text-primary">{STATIC_YEAR_TOTALS[year.yearLabel] ?? calculatedStats.total}</div>
             <div className="stat-subtitle">All Batches</div>
           </div>
           <div className="stat-card" style={{ cursor: 'default' }}>
